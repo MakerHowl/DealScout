@@ -1,0 +1,65 @@
+<!-- Out-of-band swap to update the last-scraped timestamp in the header -->
+<p class="last-scraped" id="last-scraped-text-{{ market.id }}" hx-swap-oob="true">
+    {% if market.last_scraped %}
+        Zuletzt aktualisiert: {{ market.last_scraped.strftime('%d.%m.%Y %H:%M') }}
+    {% else %}
+        Aktualisierung fehlgeschlagen.
+    {% endif %}
+</p>
+
+{% if not market.offers %}
+    <p class="no-offers">Keine Angebote für diesen Markt gefunden. Versuche es später erneut oder aktualisiere die Daten.</p>
+{% else %}
+    <div class="offers-scroll-row">
+        {% for o in market.offers %}
+            <article class="offer-card-mini">
+                <div class="offer-image-container-mini">
+                    {% if o.image_url %}
+                        <img src="{{ o.image_url }}" alt="{{ o.title }}" class="offer-image-mini" loading="lazy">
+                    {% else %}
+                        <div class="offer-image-placeholder-mini">🛒</div>
+                    {% endif %}
+                    
+                    {% if o.badge %}
+                        <span class="offer-badge-mini">{{ o.badge }}</span>
+                    {% endif %}
+                    
+                    {% if o.discount_percentage %}
+                        <span class="offer-discount-mini">-{{ o.discount_percentage }}%</span>
+                    {% endif %}
+                </div>
+                
+                <div class="offer-details-mini">
+                    <h4 class="offer-title-mini" title="{{ o.title }}">{{ o.title }}</h4>
+                    {% if o.description %}
+                        <p class="offer-desc-mini" title="{{ o.description }}">{{ o.description }}</p>
+                    {% else %}
+                        <p class="offer-desc-mini empty"></p>
+                    {% endif %}
+                    
+                    {% if o.base_price %}
+                        <span class="offer-base-price-mini">{{ o.base_price }}</span>
+                    {% else %}
+                        <span class="offer-base-price-mini empty"></span>
+                    {% endif %}
+                    
+                    <div class="offer-prices-mini">
+                        {% if o.price %}
+                            <div class="price-container-mini">
+                                <span class="price-label-mini">Normal</span>
+                                <span class="price-value-mini">{{ "%.2f"|format(o.price) }} €</span>
+                            </div>
+                        {% endif %}
+                        
+                        {% if o.app_price %}
+                            <div class="price-container-mini app-price-mini">
+                                <span class="price-label-mini">App-Preis</span>
+                                <span class="price-value-mini">{{ "%.2f"|format(o.app_price) }} €</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </article>
+        {% endfor %}
+    </div>
+{% endif %}

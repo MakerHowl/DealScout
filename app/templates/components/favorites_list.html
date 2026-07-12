@@ -1,0 +1,43 @@
+{% if favorites %}
+<section class="glass-card fade-in favorites-section">
+    <h2 class="card-title">Meine Favoriten ⭐</h2>
+    <p class="card-desc">Wähle einen deiner Lieblingsmärkte aus:</p>
+    
+    <div class="market-grid">
+        {% for m in favorites %}
+            <div class="market-card">
+                <form action="/select-market" method="POST" class="market-select-form">
+                    <input type="hidden" name="id" value="{{ m.id }}">
+                    <input type="hidden" name="name" value="{{ m.name }}">
+                    <input type="hidden" name="street" value="{{ m.street }}">
+                    <input type="hidden" name="zip_code" value="{{ m.zip_code }}">
+                    <input type="hidden" name="city" value="{{ m.city }}">
+                    <input type="hidden" name="url" value="{{ m.url }}">
+                    <input type="hidden" name="offers_url" value="{{ m.offers_url }}">
+                    
+                    <button type="submit" class="market-select-btn">
+                        <div class="market-item-content">
+                            <span class="market-logo-badge">E</span>
+                            <div class="market-item-details">
+                                <span class="market-item-name">{{ m.name }}</span>
+                                <span class="market-item-addr">{{ m.street }}, {{ m.zip_code }} {{ m.city }}</span>
+                            </div>
+                        </div>
+                    </button>
+                </form>
+                
+                <!-- Favorite Toggle Button -->
+                <button class="favorite-toggle-btn active"
+                        hx-post="/toggle-favorite"
+                        hx-vals='{"id": "{{ m.id }}", "name": "{{ m.name }}", "street": "{{ m.street }}", "zip_code": "{{ m.zip_code }}", "city": "{{ m.city }}", "url": "{{ m.url }}", "offers_url": "{{ m.offers_url }}"}'
+                        hx-swap="outerHTML"
+                        title="Aus Favoriten entfernen">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="star-icon">
+                        <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+                    </svg>
+                </button>
+            </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}

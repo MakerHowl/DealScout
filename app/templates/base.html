@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Suchen Sie nach Angeboten in Supermärkten wie Edeka. Sparen Sie Geld bei Ihrem nächsten Einkauf!">
+    <title>{% block title %}Supermarkt-Angebote Finder{% endblock %}</title>
+    
+    <!-- Google Fonts: Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Custom Premium Stylesheet -->
+    <link rel="stylesheet" href="/static/css/style.css">
+    
+    <!-- Local HTMX -->
+    <script src="/static/js/htmx.min.js"></script>
+</head>
+<body>
+    <div class="glow-bg"></div>
+    <div class="container">
+        <header class="app-header">
+            <div class="logo">
+                <span class="logo-emoji">🛒</span>
+                <h1>DealScout</h1>
+            </div>
+            <p class="tagline">Finde die besten Supermarkt-Angebote in deiner Nähe</p>
+            <nav class="nav-bar">
+                <a href="/" class="nav-link {% if active_page == 'search' %}active{% endif %}">🔍 Markt-Suche</a>
+                <a href="/favorites-offers" class="nav-link {% if active_page == 'fav_offers' %}active{% endif %}">⭐ Favoriten-Angebote</a>
+            </nav>
+        </header>
+        
+        <main class="app-content">
+            {% block content %}{% endblock %}
+        </main>
+        
+        <footer class="app-footer">
+            <p>© 2026 DealScout. Alle Preise ohne Gewähr. Beginnend mit Edeka.</p>
+        </footer>
+    </div>
+</body>
+</html>

@@ -1,0 +1,70 @@
+{% if refreshed %}
+    <div class="alert alert-success fade-in">
+        ✨ Angebote für <strong>{{ market.name }}</strong> wurden erfolgreich aktualisiert!
+    </div>
+{% endif %}
+
+{% if query %}
+    <p class="search-meta">{{ offers|length }} Ergebnisse für "{{ query }}" gefunden.</p>
+{% else %}
+    <p class="search-meta">Alle {{ offers|length }} aktuellen Angebote für {{ market.name }}:</p>
+{% endif %}
+
+{% if not offers %}
+    <div class="no-offers-container fade-in">
+        <span class="no-offers-emoji">🔍</span>
+        <h3>Keine Angebote gefunden</h3>
+        <p>Versuche es mit einem anderen Suchbegriff oder aktualisiere die Angebote.</p>
+    </div>
+{% else %}
+    <div class="offers-grid fade-in">
+        {% for o in offers %}
+            <article class="offer-card">
+                <!-- Offer Image with Badge and Discount -->
+                <div class="offer-image-container">
+                    {% if o.image_url %}
+                        <img src="{{ o.image_url }}" alt="{{ o.title }}" class="offer-image" loading="lazy">
+                    {% else %}
+                        <div class="offer-image-placeholder">🛒</div>
+                    {% endif %}
+                    
+                    <!-- Badge (e.g., Superknüller) -->
+                    {% if o.badge %}
+                        <span class="offer-badge">{{ o.badge }}</span>
+                    {% endif %}
+                    
+                    <!-- Discount Percentage -->
+                    {% if o.discount_percentage %}
+                        <span class="offer-discount">-{{ o.discount_percentage }}%</span>
+                    {% endif %}
+                </div>
+                
+                <!-- Offer Details -->
+                <div class="offer-details">
+                    <h3 class="offer-title">{{ o.title }}</h3>
+                    <p class="offer-description">{{ o.description }}</p>
+                    {% if o.base_price %}
+                        <span class="offer-base-price">{{ o.base_price }}</span>
+                    {% endif %}
+                    
+                    <!-- Offer Prices -->
+                    <div class="offer-prices">
+                        {% if o.price %}
+                            <div class="price-container">
+                                <span class="price-label">Normal</span>
+                                <span class="price-value">{{ "%.2f"|format(o.price) }} €</span>
+                            </div>
+                        {% endif %}
+                        
+                        {% if o.app_price %}
+                            <div class="price-container app-price">
+                                <span class="price-label">App-Preis</span>
+                                <span class="price-value">{{ "%.2f"|format(o.app_price) }} €</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </article>
+        {% endfor %}
+    </div>
+{% endif %}

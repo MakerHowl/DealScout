@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}DealScout - Favoriten-Angebote{% endblock %}
+
+{% block content %}
+    <div class="favorites-offers-header fade-in">
+        <h2 class="section-title">Angebote deiner Favoriten ⭐</h2>
+        <p class="section-desc">Hier siehst du alle aktuellen Angebote deiner Lieblingsmärkte im Überblick.</p>
+    </div>
+
+    {% if not favorites %}
+        <div class="glass-card no-favorites-prompt fade-in">
+            <span class="prompt-emoji">⭐</span>
+            <h3>Noch keine Favoriten hinzugefügt</h3>
+            <p>Gehe zur Markt-Suche, suche nach Edeka-Märkten in deiner Nähe und klicke auf das Sternchen, um sie zu deinen Favoriten hinzuzufügen.</p>
+            <a href="/" class="btn btn-primary">Jetzt Märkte suchen</a>
+        </div>
+    {% else %}
+        <div class="favorites-offers-list">
+            {% for m in favorites %}
+                <section class="glass-card favorite-market-section fade-in" id="market-card-{{ m.id }}">
+                    <div class="market-section-header">
+                        <div class="market-section-info">
+                            <span class="badge-store">EDEKA</span>
+                            <h3 class="market-title">{{ m.name }}</h3>
+                            <p class="market-address">{{ m.street }}, {{ m.zip_code }} {{ m.city }}</p>
+                            <p class="last-scraped" id="last-scraped-text-{{ m.id }}">
+                                {% if m.last_scraped %}
+                                    Zuletzt aktualisiert: {{ m.last_scraped.strftime('%d.%m.%Y %H:%M') }}
+                                {% else %}
+                                    Noch nicht aktualisiert.
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="market-section-actions">
+                            <div id="spinner-{{ m.id }}" class="spinner htmx-indicator"></div>
+                            <button class="btn btn-secondary btn-sm"
+                                    hx-post="/refresh-favorite-market-offers/{{ m.id }}"
+                                    hx-target="#market-offers-{{ m.id }}"
+                                    hx-indicator="#spinner-{{ m.id }}">
+                                Aktualisieren
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="market-offers-{{ m.id }}" class="market-offers-container">
+                        {% if not m.last_scraped %}
+                            <!-- Auto-scrape on load because it was never scraped -->
+                            <div class="loading-placeholder"
+                                 hx-post="/refresh-favorite-market-offers/{{ m.id }}"
+                                 hx-trigger="load"
+                                 hx-target="#market-offers-{{ m.id }}"
+                                 hx-indicator="#spinner-{{ m.id }}">
+                                <div class="spinner"></div>
+                                <p>Angebote werden zum ersten Mal geladen...</p>
+                            </div>
+                        {% else %}
+                            {% if not m.offers %}
+                                <p class="no-offers">Keine Angebote für diesen Markt in der Datenbank. Klicke auf "Aktualisieren", um sie zu laden.</p>
+                            {% else %}
+                                <!-- Render offers scroll row -->
+                                {% set market = m %}
+                                {% include "components/offers_scroll_row.html" %}
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </section>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endblock %}

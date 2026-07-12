@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}DealScout - Angebote suchen{% endblock %}
+
+{% block content %}
+    {% if not market %}
+        <!-- Favorites Container (dynamic) -->
+        <div id="favorites-container" 
+             hx-get="/favorites-list" 
+             hx-trigger="load, update-favorites from:body"
+             class="favorites-wrapper">
+             <!-- Loaded dynamically -->
+        </div>
+
+        <!-- Market Selection Panel -->
+        <section class="glass-card fade-in">
+            <h2 class="card-title">Markt auswählen</h2>
+            <p class="card-desc">Gib deine Postleitzahl oder Stadt ein, um Edeka-Märkte in deiner Nähe zu finden.</p>
+            
+            <form hx-get="/search-markets" 
+                  hx-target="#market-results" 
+                  hx-indicator="#market-spinner" 
+                  class="market-search-form">
+                <div class="search-row">
+                    <div class="search-box">
+                        <input type="text" 
+                               name="q" 
+                               id="market-search" 
+                               placeholder="z.B. 22041 oder Hamburg..." 
+                               class="form-input"
+                               required>
+                        <div id="market-spinner" class="spinner htmx-indicator"></div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Märkte suchen</button>
+                </div>
+            </form>
+            
+            <div id="market-results" class="results-container">
+                <!-- Market list will be loaded here via HTMX -->
+            </div>
+        </section>
+    {% else %}
+        <!-- Active Market Panel -->
+        <section class="glass-card active-market-card fade-in">
+            <div class="active-market-header">
+                <div>
+                    <span class="badge-store">EDEKA</span>
+                    <div class="market-title-row">
+                        <h2 class="market-name">{{ market.name }}</h2>
+                        <!-- Favorite Toggle Button for selected market -->
+                        <button class="favorite-toggle-btn {% if market.is_favorite %}active{% endif %}"
+                                hx-post="/toggle-favorite"
+                                hx-vals='{"id": "{{ market.id }}"}'
+                                hx-swap="outerHTML"
+                                title="{% if market.is_favorite %}Aus Favoriten entfernen{% else %}Zu Favoriten hinzufügen{% endif %}">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="star-icon">
+                                <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <p class="market-address">{{ market.street }}, {{ market.zip_code }} {{ market.city }}</p>
+                    {% if market.last_scraped %}
+                        <p class="last-scraped">Zuletzt aktualisiert: {{ market.last_scraped.strftime('%d.%m.%Y %H:%M') }} ({{ offers_count }} Angebote)</p>
+                    {% else %}
+                        <p class="last-scraped">Noch nicht aktualisiert. Angebote werden geladen...</p>
+                    {% endif %}
+                </div>
+                
+                <div class="market-actions">
+                    <form action="/deselect-market" method="POST">
+                        <button type="submit" class="btn btn-secondary">Markt wechseln</button>
+                    </form>
+                    <button class="btn btn-primary" 
+                            hx-post="/refresh-offers" 
+                            hx-target="#offer-results" 
+                            hx-indicator="#offers-spinner">
+                        Aktualisieren
+                    </button>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Offers Search Panel -->
+        <section class="search-offers-section fade-in">
+            <div class="search-box-large">
+                <span class="search-icon">🔍</span>
+                <input type="text" 
+                       name="q" 
+                       id="offers-search" 
+                       placeholder="Nach bestimmten Artikeln suchen (z.B. Butter, Kaffee, Schokolade)..." 
+                       hx-get="/search-offers" 
+                       hx-trigger="keyup changed delay:300ms, search" 
+                       hx-target="#offer-results" 
+                       hx-indicator="#offers-spinner"
+                       class="form-input-large">
+                <div id="offers-spinner" class="spinner htmx-indicator"></div>
+            </div>
+            
+            <div id="offer-results" 
+                 hx-get="/search-offers" 
+                 hx-trigger="load" 
+                 hx-target="this" 
+                 class="offers-results-container">
+                <!-- Offers will be loaded here via HTMX -->
+                <div class="loading-placeholder">
+                    <div class="spinner"></div>
+                    <p>Angebote werden geladen...</p>
+                </div>
+            </div>
+        </section>
+    {% endif %}
+{% endblock %}
