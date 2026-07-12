@@ -236,8 +236,9 @@ def update_market_offers_in_db(market_id: str, session: Session) -> bool:
     if not offers_data:
         return False
         
-    # 3. Delete old offers for this market
+    # 3. Delete old offers for this market, tracking old IDs to detect new offers
     old_offers = session.exec(select(Offer).where(Offer.market_id == market_id)).all()
+    old_offer_ids = {o.id for o in old_offers}
     for o in old_offers:
         session.delete(o)
     session.commit()
@@ -262,4 +263,28 @@ def update_market_offers_in_db(market_id: str, session: Session) -> bool:
     market.last_scraped = datetime.utcnow()
     session.add(market)
     session.commit()
+
+    # 6. Check for favorite product notifications on new offers
+    try:
+        from app.database import FavoriteProduct
+        from app.notifications.manager import notify_new_offers
+        
+        favorite_products = session.exec(select(FavoriteProduct)).all()
+        if favorite_products:
+            matching_new_offers = []
+            for o_data in offers_data:
+                if o_data["id"] not in old_offer_ids:
+                    title_lower = o_data["title"].lower()
+                    desc_lower = (o_data["description"] or "").lower()
+                    for prod in favorite_products:
+                        prod_lower = prod.name.lower()
+                        if prod_lower in title_lower or prod_lower in desc_lower:
+                            matching_new_offers.append(o_data)
+                            break
+                            
+            if matching_new_offers:
+                notify_new_offers(session, market.name, matching_new_offers)
+    except Exception as notify_err:
+        print(f"Error triggering notifications in scraper: {notify_err}")
+
     return True

@@ -45,10 +45,59 @@ class Offer(SQLModel, table=True):
     # Relationship back to market
     market: Market = Relationship(back_populates="offers")
 
+import json
+
 class FavoriteProduct(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str = Field(index=True, unique=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class NotificationConfig(SQLModel, table=True):
+    service_name: str = Field(primary_key=True)
+    enabled: bool = Field(default=False)
+    settings_data: str = Field(default="{}")
+
+    @property
+    def settings(self) -> dict:
+        try:
+            return json.loads(self.settings_data)
+        except Exception:
+            return {}
+
+    @settings.setter
+    def settings(self, val: dict):
+        self.settings_data = json.dumps(val)
+
+def get_notification_config(session: Session, service_name: str) -> NotificationConfig:
+    config = session.get(NotificationConfig, service_name)
+    if not config:
+        config = NotificationConfig(service_name=service_name, enabled=False, settings_data="{}")
+        session.add(config)
+        session.commit()
+        session.refresh(config)
+    return config
+
+class AppSetting(SQLModel, table=True):
+    key: str = Field(primary_key=True)
+    value: str
+
+def get_setting(session: Session, key: str, default: str) -> str:
+    setting = session.get(AppSetting, key)
+    if not setting:
+        setting = AppSetting(key=key, value=default)
+        session.add(setting)
+        session.commit()
+        session.refresh(setting)
+    return setting.value
+
+def set_setting(session: Session, key: str, value: str):
+    setting = session.get(AppSetting, key)
+    if not setting:
+        setting = AppSetting(key=key, value=value)
+    else:
+        setting.value = value
+    session.add(setting)
+    session.commit()
 
 def init_db():
     from sqlalchemy import inspect, text

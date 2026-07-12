@@ -1,3 +1,4 @@
+import asyncio
 from fastapi import FastAPI, Request, Response, Form, Cookie, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -6,8 +7,9 @@ from sqlmodel import Session, select
 from typing import Optional
 from datetime import datetime, timedelta
 
-from app.database import init_db, get_session, Market, Offer, FavoriteProduct
+from app.database import init_db, get_session, Market, Offer, FavoriteProduct, NotificationConfig, get_notification_config, get_setting, set_setting
 from app.scraper import search_edeka_markets, update_market_offers_in_db
+from app.scheduler import start_scheduler
 
 app = FastAPI(title="Supermarket Offers Search")
 
@@ -18,6 +20,7 @@ templates = Jinja2Templates(directory="app/templates")
 @app.on_event("startup")
 def on_startup():
     init_db()
+    asyncio.create_task(start_scheduler())
 
 @app.get("/", response_class=HTMLResponse)
 async def get_index(
@@ -351,3 +354,105 @@ async def get_favorite_products_offers(
             "offers_by_product": offers_by_product
         }
     )
+
+@app.get("/settings", response_class=HTMLResponse)
+async def get_settings_page(
+    request: Request,
+    db: Session = Depends(get_session)
+):
+    from croniter import croniter
+    pushover_cfg = get_notification_config(db, "pushover")
+    cron_expr = get_setting(db, "refresh_cron", "0 0 * * *")
+    
+    next_run_str = "Ungültig oder nicht gesetzt"
+    if croniter.is_valid(cron_expr):
+        try:
+            cron = croniter(cron_expr, datetime.utcnow())
+            next_run = cron.get_next(datetime)
+            next_run_str = next_run.strftime("%d.%m.%Y um %H:%M UTC")
+        except Exception:
+            pass
+            
+    last_refresh_raw = get_setting(db, "last_automatic_refresh", "")
+    last_refresh_str = "Bisher noch nicht ausgeführt"
+    if last_refresh_raw:
+        try:
+            last_refresh_dt = datetime.fromisoformat(last_refresh_raw)
+            last_refresh_str = last_refresh_dt.strftime("%d.%m.%Y um %H:%M UTC")
+        except Exception:
+            pass
+
+    return templates.TemplateResponse(
+        request=request,
+        name="settings.html",
+        context={
+            "pushover": pushover_cfg,
+            "cron_expr": cron_expr,
+            "next_run_str": next_run_str,
+            "last_refresh_str": last_refresh_str,
+            "active_page": "settings"
+        }
+    )
+
+@app.post("/settings/cron", response_class=HTMLResponse)
+async def save_cron_settings(
+    cron: str = Form(""),
+    db: Session = Depends(get_session)
+):
+    from croniter import croniter
+    cron_clean = cron.strip()
+    
+    if not croniter.is_valid(cron_clean):
+        return "<div class='alert alert-danger' style='background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.3); color: #F87171; padding: 1rem 1.5rem; border-radius: 12px; margin-bottom: 1rem;'>Ungültiger Cron-Ausdruck. Bitte verwende das Standard-Format (z.B. '0 0 * * *').</div>"
+        
+    set_setting(db, "refresh_cron", cron_clean)
+    
+    next_run_str = "Ungültig"
+    try:
+        cron_obj = croniter(cron_clean, datetime.utcnow())
+        next_run = cron_obj.get_next(datetime)
+        next_run_str = next_run.strftime("%d.%m.%Y um %H:%M UTC")
+    except Exception:
+        pass
+        
+    success_msg = "<div class='alert alert-success fade-in'>Cron-Zeitplan erfolgreich gespeichert!</div>"
+    oob_update = f'<strong id="next-run-time" style="color: var(--primary);" hx-swap-oob="true">{next_run_str}</strong>'
+    return success_msg + oob_update
+
+@app.post("/settings/pushover", response_class=HTMLResponse)
+async def save_pushover_settings(
+    user_key: str = Form(""),
+    api_token: str = Form(""),
+    enabled: bool = Form(False),
+    db: Session = Depends(get_session)
+):
+    config = get_notification_config(db, "pushover")
+    config.enabled = enabled
+    config.settings = {
+        "user_key": user_key.strip(),
+        "api_token": api_token.strip()
+    }
+    db.add(config)
+    db.commit()
+    return "<div class='alert alert-success fade-in'>Pushover-Einstellungen erfolgreich gespeichert!</div>"
+
+@app.post("/settings/pushover/test", response_class=HTMLResponse)
+async def test_pushover_settings(
+    user_key: str = Form(""),
+    api_token: str = Form("")
+):
+    from app.notifications.manager import get_service
+    pushover_service = get_service("pushover")
+    
+    if not pushover_service:
+        return "<div class='alert alert-danger' style='background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.3); color: #F87171; padding: 1rem 1.5rem; border-radius: 12px; margin-bottom: 1rem;'>Fehler: Pushover-Dienst ist nicht registriert.</div>"
+        
+    settings = {
+        "user_key": user_key.strip(),
+        "api_token": api_token.strip()
+    }
+    success = pushover_service.send_test(settings)
+    if success:
+        return "<div class='alert alert-success fade-in'>Test-Benachrichtigung erfolgreich gesendet! Bitte überprüfe dein Gerät.</div>"
+    else:
+        return "<div class='alert alert-danger' style='background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.3); color: #F87171; padding: 1rem 1.5rem; border-radius: 12px; margin-bottom: 1rem;'>Senden der Test-Benachrichtigung fehlgeschlagen. Bitte überprüfe User Key und API Token.</div>"
