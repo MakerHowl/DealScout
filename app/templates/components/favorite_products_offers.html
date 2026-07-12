@@ -19,69 +19,73 @@
             <p>Aktuell gibt es in deinen Lieblingsmärkten keine Angebote, die zu deinen Lieblingsprodukten passen.</p>
         </div>
     {% else %}
-        <div class="favorite-products-offers-list" style="display: flex; flex-direction: column; gap: 2rem;">
+        <div class="favorite-products-offers-list" style="display: flex; flex-direction: column; gap: 1.5rem;">
             {% for prod_name, offers in offers_by_product.items() %}
                 <div class="product-offers-group glass-card fade-in" style="padding: 1.5rem; border-left: 4px solid var(--primary);">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 0.75rem;">
-                        <h4 style="font-size: 1.30rem; font-weight: 600; color: var(--text-primary); margin: 0;">
+                        <h4 style="font-size: 1.25rem; font-weight: 600; color: var(--text-primary); margin: 0;">
                             ❤️ {{ prod_name }}
                         </h4>
-                        <span class="badge-store" style="background: var(--primary); color: #fff; margin-bottom: 0;">
+                        <span class="badge-store" style="background: var(--primary); color: #fff; margin-bottom: 0; font-size: 0.7rem; padding: 0.15rem 0.5rem;">
                             {{ offers|length }} {% if offers|length == 1 %}Angebot{% else %}Angebote{% endif %}
                         </span>
                     </div>
                     
-                    <div class="offers-grid">
+                    <div class="offers-list">
                         {% for o in offers %}
-                            <article class="offer-card">
-                                <div class="offer-image-container">
+                            <div class="offer-list-item">
+                                <!-- Thumbnail -->
+                                <div class="offer-list-img-container">
                                     {% if o.image_url %}
-                                        <img src="{{ o.image_url }}" alt="{{ o.title }}" class="offer-image" loading="lazy">
+                                        <img src="{{ o.image_url }}" alt="{{ o.title }}" class="offer-list-img" loading="lazy">
                                     {% else %}
-                                        <div class="offer-image-placeholder">🛒</div>
-                                    {% endif %}
-                                    
-                                    {% if o.badge %}
-                                        <span class="offer-badge">{{ o.badge }}</span>
-                                    {% endif %}
-                                    
-                                    {% if o.discount_percentage %}
-                                        <span class="offer-discount">-{{ o.discount_percentage }}%</span>
+                                        <span style="font-size: 1.5rem; opacity: 0.3;">🛒</span>
                                     {% endif %}
                                 </div>
                                 
-                                <div class="offer-details">
-                                    <!-- Store/Market Info -->
-                                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.25rem;">
-                                        <span class="badge-store" style="font-size: 0.65rem; margin-bottom: 0;">EDEKA</span>
-                                        <span style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 400;" title="{{ o.market.street }}, {{ o.market.city }}">
+                                <!-- Content Details -->
+                                <div class="offer-list-details">
+                                    <div class="offer-list-title-row">
+                                        <h5 class="offer-list-title" title="{{ o.title }}">{{ o.title }}</h5>
+                                        <span class="offer-list-store" title="{{ o.market.street }}, {{ o.market.city }}">
                                             📍 {{ o.market.name }}
                                         </span>
                                     </div>
                                     
-                                    <h3 class="offer-title">{{ o.title }}</h3>
-                                    <p class="offer-description">{{ o.description }}</p>
-                                    {% if o.base_price %}
-                                        <span class="offer-base-price">{{ o.base_price }}</span>
+                                    {% if o.description %}
+                                        <p class="offer-list-desc" title="{{ o.description }}">{{ o.description }}</p>
                                     {% endif %}
                                     
-                                    <div class="offer-prices">
-                                        {% if o.price %}
-                                            <div class="price-container">
-                                                <span class="price-label">Normal</span>
-                                                <span class="price-value">{{ "%.2f"|format(o.price) }} €</span>
-                                            </div>
+                                    <div class="offer-list-meta">
+                                        {% if o.base_price %}
+                                            <span class="offer-list-base-price">{{ o.base_price }}</span>
                                         {% endif %}
-                                        
-                                        {% if o.app_price %}
-                                            <div class="price-container app-price">
-                                                <span class="price-label">App-Preis</span>
-                                                <span class="price-value">{{ "%.2f"|format(o.app_price) }} €</span>
-                                            </div>
+                                        {% if o.badge %}
+                                            <span class="offer-list-badge">{{ o.badge }}</span>
+                                        {% endif %}
+                                        {% if o.discount_percentage %}
+                                            <span class="offer-list-discount">-{{ o.discount_percentage }}%</span>
                                         {% endif %}
                                     </div>
                                 </div>
-                            </article>
+                                
+                                <!-- Prices -->
+                                <div class="offer-list-prices">
+                                    {% if o.price %}
+                                        <div class="offer-list-price-box">
+                                            <span class="offer-list-price-label">Normal</span>
+                                            <span class="offer-list-price-val">{{ "%.2f"|format(o.price) }} €</span>
+                                        </div>
+                                    {% endif %}
+                                    
+                                    {% if o.app_price %}
+                                        <div class="offer-list-price-box app-price">
+                                            <span class="offer-list-price-label">App-Preis</span>
+                                            <span class="offer-list-price-val">{{ "%.2f"|format(o.app_price) }} €</span>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
                         {% endfor %}
                     </div>
                 </div>
