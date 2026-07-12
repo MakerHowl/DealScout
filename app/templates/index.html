@@ -44,7 +44,11 @@
         <section class="glass-card active-market-card fade-in">
             <div class="active-market-header">
                 <div>
-                    <span class="badge-store">EDEKA</span>
+                    {% if market.id.startswith('lidl-') %}
+                        <span class="badge-store lidl-badge-store">LIDL</span>
+                    {% else %}
+                        <span class="badge-store">EDEKA</span>
+                    {% endif %}
                     <div class="market-title-row">
                         <h2 class="market-name">{{ market.name }}</h2>
                         <!-- Favorite Toggle Button for selected market -->

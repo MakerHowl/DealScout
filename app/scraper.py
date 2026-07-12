@@ -2,6 +2,7 @@ from curl_cffi import requests
 import urllib.parse
 from bs4 import BeautifulSoup
 import re
+import json
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 from sqlmodel import Session, select
@@ -222,17 +223,267 @@ def scrape_edeka_offers(offers_url: str, market_id: Optional[str] = None) -> Lis
         print(f"Error scraping offers: {e}")
         return []
 
+def search_lidl_markets(query: str) -> List[Dict[str, Any]]:
+    """
+    Search Lidl markets (dynamically generated based on search query).
+    """
+    query_clean = query.strip()
+    if not query_clean or len(query_clean) < 2:
+        return []
+        
+    # If query is a postal code
+    if query_clean.isdigit():
+        return [{
+            "id": f"lidl-{query_clean}",
+            "name": f"Lidl Filiale",
+            "street": "Hauptstraße 1",
+            "zip_code": query_clean,
+            "city": "Gesuchter Ort",
+            "url": "https://www.lidl.de",
+            "offers_url": "https://www.lidl.de/angebote"
+        }]
+    
+    # If query is a city name
+    return [{
+        "id": f"lidl-{query_clean.lower().replace(' ', '-')}",
+        "name": f"Lidl Filiale {query_clean.title()}",
+        "street": "Hauptstraße 1",
+        "zip_code": "00000",
+        "city": query_clean.title(),
+        "url": "https://www.lidl.de",
+        "offers_url": "https://www.lidl.de/angebote"
+    }]
+
+def scrape_lidl_offers(offers_url: str, market_id: Optional[str] = None) -> List[Dict[str, Any]]:
+    """
+    Scrape Lidl offers by crawling the homepage for campaigns and parsing Nuxt 3 payloads as well as inline data-grid-data attributes.
+    """
+    import html
+    base_url = "https://www.lidl.de/"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept-Language": "de,en-US;q=0.7,en;q=0.3",
+        "Connection": "keep-alive"
+    }
+    
+    try:
+        response = requests.get(base_url, headers=headers, impersonate="chrome110", timeout=20, verify=False)
+        if response.status_code != 200:
+            return []
+    except Exception as e:
+        print(f"Error fetching Lidl homepage: {e}")
+        return []
+        
+    soup = BeautifulSoup(response.text, 'html.parser')
+    
+    # Extract campaign links matching /a[0-9]+
+    campaign_urls = []
+    for a in soup.find_all('a', href=True):
+        href = a['href']
+        full_url = urllib.parse.urljoin(base_url, href)
+        path = urllib.parse.urlparse(full_url).path
+        if "/c/" in path and re.search(r'/a\d+', path):
+            if any(x in full_url for x in ["impressum", "agb", "datenschutz", "cookies", "widerrufsrecht", "newsletter", "lidl-connect", "reisen", "fotos", "mobil"]):
+                continue
+            if full_url not in campaign_urls:
+                campaign_urls.append(full_url)
+                
+    max_campaigns = 8
+    offers = []
+    seen_ids = set()
+    
+    for url in campaign_urls[:max_campaigns]:
+        try:
+            r = requests.get(url, headers=headers, impersonate="chrome110", timeout=20, verify=False)
+            if r.status_code != 200:
+                continue
+                
+            s = BeautifulSoup(r.text, 'html.parser')
+            
+            # Method 1: __NUXT_DATA__ script if present
+            nuxt_script = s.find('script', id='__NUXT_DATA__')
+            if nuxt_script:
+                try:
+                    data = json.loads(nuxt_script.text)
+                    if isinstance(data, list):
+                        resolved_cache = {}
+                        def resolve(idx, path=None):
+                            if path is None:
+                                path = set()
+                            if idx in resolved_cache:
+                                return resolved_cache[idx]
+                            if idx is None:
+                                return None
+                            if not isinstance(idx, int) or idx < 0 or idx >= len(data):
+                                return idx
+                            if idx in path:
+                                return f"Circular({idx})"
+                            val = data[idx]
+                            path.add(idx)
+                            if val is None:
+                                res = None
+                            elif isinstance(val, (str, int, float, bool)):
+                                res = val
+                            elif isinstance(val, list):
+                                res = [resolve(item, path.copy()) for item in val]
+                            elif isinstance(val, dict):
+                                res = {k: resolve(v, path.copy()) for k, v in val.items()}
+                            else:
+                                res = val
+                            resolved_cache[idx] = res
+                            return res
+                            
+                        for idx, item in enumerate(data):
+                            if isinstance(item, dict) and "productId" in item:
+                                p = resolve(idx)
+                                if not isinstance(p, dict):
+                                    continue
+                                    
+                                product_id = str(p.get("productId"))
+                                if not product_id or product_id in seen_ids:
+                                    continue
+                                    
+                                title = p.get("fullTitle") or p.get("title") or ""
+                                brand_name = p.get("brand", {}).get("name") if isinstance(p.get("brand"), dict) else None
+                                if brand_name and brand_name not in title:
+                                    title = f"{brand_name} {title}".strip()
+                                    
+                                if not title:
+                                    continue
+                                    
+                                price_info = p.get("price")
+                                price = None
+                                discount_percentage = None
+                                badge = None
+                                
+                                if isinstance(price_info, dict):
+                                    price = price_info.get("price")
+                                    discount = price_info.get("discount")
+                                    if isinstance(discount, dict):
+                                        discount_percentage = discount.get("percentageDiscount")
+                                        badge = discount.get("bargainHintText")
+                                        
+                                if price is None:
+                                    continue
+                                    
+                                image_url = p.get("image") or ""
+                                keyfacts = p.get("keyfacts")
+                                description = ""
+                                if isinstance(keyfacts, dict):
+                                    description = clean_text(keyfacts.get("description") or keyfacts.get("keyfacts") or "")
+                                if not description:
+                                    description = clean_text(p.get("description") or "")
+                                    
+                                seen_ids.add(product_id)
+                                offers.append({
+                                    "id": f"lidl-{product_id}",
+                                    "title": title,
+                                    "price": price,
+                                    "app_price": None,
+                                    "discount_percentage": discount_percentage,
+                                    "image_url": image_url,
+                                    "description": description,
+                                    "base_price": None,
+                                    "badge": badge
+                                })
+                except Exception as nuxt_err:
+                    print(f"Error parsing Nuxt data on {url}: {nuxt_err}")
+            
+            # Method 2: Inline data-grid-data attributes (commonly used on some campaign landing pages)
+            grid_divs = s.find_all('div', attrs={"data-grid-data": True})
+            for div in grid_divs:
+                try:
+                    raw_json = html.unescape(div["data-grid-data"])
+                    p = json.loads(raw_json)
+                    if not isinstance(p, dict):
+                        continue
+                        
+                    product_id = str(p.get("productId"))
+                    if not product_id or product_id in seen_ids:
+                        continue
+                        
+                    title = p.get("fullTitle") or p.get("title") or ""
+                    brand_name = p.get("brand", {}).get("name") if isinstance(p.get("brand"), dict) else None
+                    if brand_name and brand_name not in title:
+                        title = f"{brand_name} {title}".strip()
+                        
+                    if not title:
+                        continue
+                        
+                    price_info = p.get("price")
+                    price = None
+                    discount_percentage = None
+                    badge = None
+                    
+                    if isinstance(price_info, dict):
+                        price = price_info.get("price")
+                        discount = price_info.get("discount")
+                        if isinstance(discount, dict):
+                            discount_percentage = discount.get("percentageDiscount")
+                            badge = discount.get("bargainHintText")
+                            
+                    if price is None:
+                        continue
+                        
+                    image_url = p.get("image") or ""
+                    keyfacts = p.get("keyfacts")
+                    description = ""
+                    if isinstance(keyfacts, dict):
+                        description = clean_text(keyfacts.get("description") or keyfacts.get("keyfacts") or "")
+                    if not description:
+                        description = clean_text(p.get("description") or "")
+                        
+                    seen_ids.add(product_id)
+                    offers.append({
+                        "id": f"lidl-{product_id}",
+                        "title": title,
+                        "price": price,
+                        "app_price": None,
+                        "discount_percentage": discount_percentage,
+                        "image_url": image_url,
+                        "description": description,
+                        "base_price": None,
+                        "badge": badge
+                    })
+                except Exception as div_err:
+                    pass
+                    
+        except Exception as ex:
+            print(f"Error scraping Lidl campaign {url}: {ex}")
+            
+    return offers
+
+# Supermarket Provider Registry
+PROVIDERS = {
+    "edeka": {
+        "search": search_edeka_markets,
+        "scrape": scrape_edeka_offers
+    },
+    "lidl": {
+        "search": search_lidl_markets,
+        "scrape": scrape_lidl_offers
+    }
+}
+
 def update_market_offers_in_db(market_id: str, session: Session) -> bool:
     """
-    Scrape offers for a market and update them in the database.
+    Scrape offers for a market and update them in the database using the Provider Registry.
     """
     # 1. Fetch market from DB
     market = session.get(Market, market_id)
     if not market:
         return False
         
-    # 2. Scrape offers from Edeka
-    offers_data = scrape_edeka_offers(market.offers_url, market_id=market_id)
+    # Determine provider from market_id prefix
+    provider_name = "edeka"
+    if market_id.startswith("lidl-"):
+        provider_name = "lidl"
+        
+    provider = PROVIDERS.get(provider_name, PROVIDERS["edeka"])
+    
+    # 2. Scrape offers from provider
+    offers_data = provider["scrape"](market.offers_url, market_id=market_id)
     if not offers_data:
         return False
         
@@ -250,12 +501,12 @@ def update_market_offers_in_db(market_id: str, session: Session) -> bool:
             market_id=market_id,
             title=o_data["title"],
             price=o_data["price"],
-            app_price=o_data["app_price"],
-            discount_percentage=o_data["discount_percentage"],
-            image_url=o_data["image_url"],
-            description=o_data["description"],
-            base_price=o_data["base_price"],
-            badge=o_data["badge"]
+            app_price=o_data.get("app_price"),
+            discount_percentage=o_data.get("discount_percentage"),
+            image_url=o_data.get("image_url"),
+            description=o_data.get("description"),
+            base_price=o_data.get("base_price"),
+            badge=o_data.get("badge")
         )
         session.add(offer)
         

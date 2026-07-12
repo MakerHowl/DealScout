@@ -8,7 +8,7 @@ from typing import Optional
 from datetime import datetime, timedelta
 
 from app.database import init_db, get_session, Market, Offer, FavoriteProduct, NotificationConfig, get_notification_config, get_setting, set_setting
-from app.scraper import search_edeka_markets, update_market_offers_in_db
+from app.scraper import update_market_offers_in_db, PROVIDERS
 from app.scheduler import start_scheduler
 
 app = FastAPI(title="Supermarket Offers Search")
@@ -62,11 +62,19 @@ async def search_markets(
     q: str = "",
     db: Session = Depends(get_session)
 ):
-    if not q or len(q.strip()) < 2:
+    q_clean = q.strip()
+    if not q_clean or len(q_clean) < 2:
         return "<p class='text-red-400 mt-4 text-center'>Bitte geben Sie mindestens 2 Zeichen ein.</p>"
         
-    markets = search_edeka_markets(q.strip())
-    
+    markets = []
+    # Search across all registered providers
+    for name, provider in PROVIDERS.items():
+        try:
+            res = provider["search"](q_clean)
+            markets.extend(res)
+        except Exception as e:
+            print(f"Error searching {name} markets: {e}")
+            
     # Check database to see which markets are already favorited
     favorited_ids = set()
     if markets:

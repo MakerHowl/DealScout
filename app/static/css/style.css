@@ -1387,4 +1387,16 @@ body {
     }
 }
 
+/* Lidl Specific Branding Styles */
+.market-logo-badge.lidl-logo-badge {
+    background: radial-gradient(circle, #0050aa 0%, #003366 100%);
+    color: #ffffff;
+    border: 2px solid #fff000;
+    box-shadow: 0 4px 10px rgba(0, 80, 170, 0.4);
+}
 
+.badge-store.lidl-badge-store {
+    background: #0050aa;
+    color: #ffffff;
+    border: 1px solid #fff000;
+}

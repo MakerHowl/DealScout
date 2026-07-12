@@ -17,7 +17,11 @@
                     
                     <button type="submit" class="market-select-btn">
                         <div class="market-item-content">
-                            <span class="market-logo-badge">E</span>
+                            {% if m.id.startswith('lidl-') %}
+                                <span class="market-logo-badge lidl-logo-badge">L</span>
+                            {% else %}
+                                <span class="market-logo-badge">E</span>
+                            {% endif %}
                             <div class="market-item-details">
                                 <span class="market-item-name">{{ m.name }}</span>
                                 <span class="market-item-addr">{{ m.street }}, {{ m.zip_code }} {{ m.city }}</span>

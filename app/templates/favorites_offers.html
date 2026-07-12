@@ -21,7 +21,11 @@
                 <section class="glass-card favorite-market-section fade-in" id="market-card-{{ m.id }}">
                     <div class="market-section-header">
                         <div class="market-section-info">
-                            <span class="badge-store">EDEKA</span>
+                            {% if m.id.startswith('lidl-') %}
+                                <span class="badge-store lidl-badge-store">LIDL</span>
+                            {% else %}
+                                <span class="badge-store">EDEKA</span>
+                            {% endif %}
                             <h3 class="market-title">{{ m.name }}</h3>
                             <p class="market-address">{{ m.street }}, {{ m.zip_code }} {{ m.city }}</p>
                             <p class="last-scraped" id="last-scraped-text-{{ m.id }}">
