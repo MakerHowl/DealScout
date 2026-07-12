@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}DealScout - Meine Lieblingsprodukte{% endblock %}
+
+{% block content %}
+    <div class="favorites-offers-header fade-in">
+        <h2 class="section-title">Meine Lieblingsprodukte ❤️</h2>
+        <p class="section-desc">Verwalte deine Lieblingsprodukte und verpasse kein Angebot in deinen Lieblingsmärkten.</p>
+    </div>
+
+    <div class="favorite-products-layout fade-in">
+        <!-- Manage Section -->
+        <section class="glass-card favorite-products-manage">
+            <h3 class="card-title">Produkt hinzufügen</h3>
+            <p class="card-desc">Gib den Namen eines Produkts ein (z.B. "Wagner Tiefkühlpizza" oder "Butter").</p>
+            
+            <form hx-post="/add-favorite-product" 
+                  hx-target="#add-product-feedback" 
+                  class="market-search-form"
+                  hx-on::after-request="if(event.detail.successful) this.reset()">
+                <div class="search-row">
+                    <input type="text" 
+                           name="name" 
+                           placeholder="z.B. Wagner Tiefkühlpizza..." 
+                           class="form-input" 
+                           required>
+                    <button type="submit" class="btn btn-primary">Hinzufügen</button>
+                </div>
+                <div id="add-product-feedback" class="mt-2 text-sm" style="margin-top: 0.5rem; min-height: 1.25rem;"></div>
+            </form>
+            
+            <hr class="divider" style="margin: 1.5rem 0; border: none; border-top: 1px solid rgba(255,255,255,0.06);">
+            
+            <h3 class="card-title">Deine Liste</h3>
+            <div id="favorite-products-list-container" 
+                 hx-get="/favorite-products-list" 
+                 hx-trigger="load, update-favorite-products from:body">
+                 <div class="spinner"></div>
+            </div>
+        </section>
+
+        <!-- Offers Section -->
+        <section class="favorite-products-offers-section">
+            <h3 class="section-title-sub" style="font-size: 1.5rem; font-weight: 600; margin-bottom: 1rem;">Aktuelle Angebote</h3>
+            <div id="favorite-products-offers-container" 
+                 hx-get="/favorite-products-offers" 
+                 hx-trigger="load, update-favorite-products from:body">
+                 <div class="spinner"></div>
+            </div>
+        </section>
+    </div>
+{% endblock %}

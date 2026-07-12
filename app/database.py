@@ -45,6 +45,11 @@ class Offer(SQLModel, table=True):
     # Relationship back to market
     market: Market = Relationship(back_populates="offers")
 
+class FavoriteProduct(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str = Field(index=True, unique=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
 def init_db():
     from sqlalchemy import inspect, text
     inspector = inspect(engine)

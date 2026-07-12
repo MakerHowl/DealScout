@@ -6,7 +6,7 @@ from sqlmodel import Session, select
 from typing import Optional
 from datetime import datetime, timedelta
 
-from app.database import init_db, get_session, Market, Offer
+from app.database import init_db, get_session, Market, Offer, FavoriteProduct
 from app.scraper import search_edeka_markets, update_market_offers_in_db
 
 app = FastAPI(title="Supermarket Offers Search")
@@ -256,4 +256,98 @@ async def refresh_favorite_market_offers(
         request=request,
         name="components/offers_scroll_row.html",
         context={"market": market, "refreshed": success}
+    )
+
+@app.get("/favorite-products", response_class=HTMLResponse)
+async def get_favorite_products_page(
+    request: Request,
+    db: Session = Depends(get_session)
+):
+    return templates.TemplateResponse(
+        request=request,
+        name="favorite_products.html",
+        context={"active_page": "fav_products"}
+    )
+
+@app.get("/favorite-products-list", response_class=HTMLResponse)
+async def get_favorite_products_list(
+    request: Request,
+    db: Session = Depends(get_session)
+):
+    products = db.exec(select(FavoriteProduct).order_by(FavoriteProduct.name)).all()
+    return templates.TemplateResponse(
+        request=request,
+        name="components/favorite_products_list.html",
+        context={"products": products}
+    )
+
+@app.post("/add-favorite-product", response_class=HTMLResponse)
+async def add_favorite_product(
+    response: Response,
+    name: str = Form(...),
+    db: Session = Depends(get_session)
+):
+    name_clean = name.strip()
+    if not name_clean:
+        return "<span class='text-red-400'>Produktname darf nicht leer sein.</span>"
+        
+    stmt = select(FavoriteProduct)
+    existing_products = db.exec(stmt).all()
+    if any(p.name.lower() == name_clean.lower() for p in existing_products):
+        return "<span class='text-amber-400'>Dieses Produkt ist bereits in deiner Liste.</span>"
+        
+    new_prod = FavoriteProduct(name=name_clean)
+    db.add(new_prod)
+    db.commit()
+    
+    response.headers["HX-Trigger"] = "update-favorite-products"
+    return "<span class='text-green-400'>Erfolgreich hinzugefügt!</span>"
+
+@app.delete("/delete-favorite-product/{product_id}")
+async def delete_favorite_product(
+    product_id: int,
+    response: Response,
+    db: Session = Depends(get_session)
+):
+    prod = db.get(FavoriteProduct, product_id)
+    if prod:
+        db.delete(prod)
+        db.commit()
+        response.headers["HX-Trigger"] = "update-favorite-products"
+    return ""
+
+@app.get("/favorite-products-offers", response_class=HTMLResponse)
+async def get_favorite_products_offers(
+    request: Request,
+    db: Session = Depends(get_session)
+):
+    favorite_markets = db.exec(select(Market).where(Market.is_favorite == True)).all()
+    fav_market_ids = [m.id for m in favorite_markets]
+    
+    products = db.exec(select(FavoriteProduct).order_by(FavoriteProduct.name)).all()
+    
+    offers_by_product = {}
+    
+    if fav_market_ids and products:
+        offers = db.exec(select(Offer).where(Offer.market_id.in_(fav_market_ids))).all()
+        
+        for prod in products:
+            prod_name_lower = prod.name.lower()
+            matching_offers = []
+            for offer in offers:
+                title_match = prod_name_lower in offer.title.lower()
+                desc_match = offer.description and prod_name_lower in offer.description.lower()
+                if title_match or desc_match:
+                    matching_offers.append(offer)
+            if matching_offers:
+                offers_by_product[prod.name] = matching_offers
+                
+    return templates.TemplateResponse(
+        request=request,
+        name="components/favorite_products_offers.html",
+        context={
+            "favorite_markets": favorite_markets,
+            "products": products,
+            "offers_by_product": offers_by_product
+        }
     )

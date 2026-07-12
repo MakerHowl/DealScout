@@ -1,0 +1,17 @@
+{% if not products %}
+    <p class="text-secondary" style="color: var(--text-secondary); font-style: italic; font-weight: 300;">Deine Liste ist noch leer. Füge oben dein erstes Lieblingsprodukt hinzu!</p>
+{% else %}
+    <ul class="product-badge-list">
+        {% for p in products %}
+            <li class="product-badge">
+                <span>{{ p.name }}</span>
+                <button class="product-delete-btn" 
+                        hx-delete="/delete-favorite-product/{{ p.id }}"
+                        hx-swap="none"
+                        title="Produkt löschen">
+                    <span class="hover-red">×</span>
+                </button>
+            </li>
+        {% endfor %}
+    </ul>
+{% endif %}
