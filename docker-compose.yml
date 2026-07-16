@@ -7,6 +7,4 @@ services:
       - "8000:8000"
     volumes:
       - ./data:/app/data
-    environment:
-      - DATABASE_URL=sqlite:////app/data/deals.db
     restart: always
