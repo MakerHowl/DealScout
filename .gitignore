@@ -17,3 +17,7 @@ ENV/
 .DS_Store
 .vscode/
 .idea/
+
+# Local data and scratch files
+nuxt_data.json
+
