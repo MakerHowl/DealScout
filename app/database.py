@@ -40,6 +40,8 @@ class Offer(SQLModel, table=True):
     description: Optional[str] = None
     base_price: Optional[str] = None
     badge: Optional[str] = None
+    valid_from: Optional[str] = None
+    valid_until: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
     
     # Relationship back to market
@@ -107,6 +109,15 @@ def init_db():
         if len(pks) < 2:
             print("Old database schema detected (no composite PK). Recreating tables...")
             SQLModel.metadata.drop_all(engine)
+        else:
+            columns = [c["name"] for c in inspector.get_columns("offer")]
+            with engine.begin() as conn:
+                if "valid_from" not in columns:
+                    print("Adding valid_from column to offer table...")
+                    conn.execute(text("ALTER TABLE offer ADD COLUMN valid_from VARCHAR"))
+                if "valid_until" not in columns:
+                    print("Adding valid_until column to offer table...")
+                    conn.execute(text("ALTER TABLE offer ADD COLUMN valid_until VARCHAR"))
     SQLModel.metadata.create_all(engine)
     
     # Check if is_favorite column exists in market table

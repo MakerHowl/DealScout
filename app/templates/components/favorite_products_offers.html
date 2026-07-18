@@ -66,6 +66,13 @@
                                         {% if o.discount_percentage %}
                                             <span class="offer-list-discount">-{{ o.discount_percentage }}%</span>
                                         {% endif %}
+                                        {% if o.valid_from and o.valid_until %}
+                                            <span class="offer-list-validity" style="font-size: 0.8rem; color: #6b7280; margin-left: 0.5rem;">🗓️ {{ o.valid_from }} - {{ o.valid_until }}</span>
+                                        {% elif o.valid_until %}
+                                            <span class="offer-list-validity" style="font-size: 0.8rem; color: #6b7280; margin-left: 0.5rem;">🗓️ Bis {{ o.valid_until }}</span>
+                                        {% elif o.valid_from %}
+                                            <span class="offer-list-validity" style="font-size: 0.8rem; color: #6b7280; margin-left: 0.5rem;">🗓️ Ab {{ o.valid_from }}</span>
+                                        {% endif %}
                                     </div>
                                 </div>
                                 

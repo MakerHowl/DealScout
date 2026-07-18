@@ -47,6 +47,14 @@
                         <span class="offer-base-price">{{ o.base_price }}</span>
                     {% endif %}
                     
+                    {% if o.valid_from and o.valid_until %}
+                        <p class="offer-validity" style="font-size: 0.85rem; color: #6b7280; margin-top: 0.25rem;">🗓️ {{ o.valid_from }} - {{ o.valid_until }}</p>
+                    {% elif o.valid_until %}
+                        <p class="offer-validity" style="font-size: 0.85rem; color: #6b7280; margin-top: 0.25rem;">🗓️ Bis {{ o.valid_until }}</p>
+                    {% elif o.valid_from %}
+                        <p class="offer-validity" style="font-size: 0.85rem; color: #6b7280; margin-top: 0.25rem;">🗓️ Ab {{ o.valid_from }}</p>
+                    {% endif %}
+                    
                     <!-- Offer Prices -->
                     <div class="offer-prices">
                         {% if o.price %}

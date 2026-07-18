@@ -43,6 +43,16 @@
                         <span class="offer-base-price-mini empty"></span>
                     {% endif %}
                     
+                    {% if o.valid_from and o.valid_until %}
+                        <p class="offer-validity-mini" style="font-size: 0.75rem; color: #6b7280; margin-top: 0.25rem; margin-bottom: 0;">🗓️ {{ o.valid_from }} - {{ o.valid_until }}</p>
+                    {% elif o.valid_until %}
+                        <p class="offer-validity-mini" style="font-size: 0.75rem; color: #6b7280; margin-top: 0.25rem; margin-bottom: 0;">🗓️ Bis {{ o.valid_until }}</p>
+                    {% elif o.valid_from %}
+                        <p class="offer-validity-mini" style="font-size: 0.75rem; color: #6b7280; margin-top: 0.25rem; margin-bottom: 0;">🗓️ Ab {{ o.valid_from }}</p>
+                    {% else %}
+                        <p class="offer-validity-mini empty" style="margin-top: 0.25rem; margin-bottom: 0; min-height: 1.125rem;"></p>
+                    {% endif %}
+                    
                     <div class="offer-prices-mini">
                         {% if o.price %}
                             <div class="price-container-mini">

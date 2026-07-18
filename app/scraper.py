@@ -16,6 +16,43 @@ def clean_text(text: str) -> str:
     text = re.sub(r'\s+', ' ', text)
     return text.strip()
 
+def extract_lidl_validity(p: Dict[str, Any]) -> tuple:
+    valid_from = None
+    valid_until = None
+    
+    # 1. Try storeStartDate/storeEndDate (timestamps)
+    start_ts = p.get("storeStartDate")
+    end_ts = p.get("storeEndDate")
+    if start_ts and isinstance(start_ts, (int, float)):
+        try:
+            valid_from = datetime.fromtimestamp(start_ts).strftime("%d.%m.")
+        except Exception:
+            pass
+    if end_ts and isinstance(end_ts, (int, float)):
+        try:
+            valid_until = datetime.fromtimestamp(end_ts).strftime("%d.%m.")
+        except Exception:
+            pass
+            
+    # 2. Try campaign info (ISO strings) if timestamps not present
+    if not valid_from or not valid_until:
+        campaign_info = p.get("campaign")
+        if isinstance(campaign_info, dict):
+            start_raw = campaign_info.get("startDate")
+            end_raw = campaign_info.get("endDate")
+            if start_raw and not valid_from:
+                try:
+                    valid_from = datetime.fromisoformat(str(start_raw).replace('Z', '+00:00')).strftime("%d.%m.")
+                except Exception:
+                    valid_from = str(start_raw)[:10]
+            if end_raw and not valid_until:
+                try:
+                    valid_until = datetime.fromisoformat(str(end_raw).replace('Z', '+00:00')).strftime("%d.%m.")
+                except Exception:
+                    valid_until = str(end_raw)[:10]
+                    
+    return valid_from, valid_until
+
 def search_edeka_markets(query: str) -> List[Dict[str, Any]]:
     """
     Search Edeka markets by zip code or city name.
@@ -206,6 +243,15 @@ def scrape_edeka_offers(offers_url: str, market_id: Optional[str] = None) -> Lis
                 badge = clean_text(badge_el.text)
                 badge = re.sub(r'^Tag:\s*', '', badge).strip()
                 
+            # 7. Validity
+            valid_from = None
+            valid_until = None
+            valid_match = re.search(r'Gültig\s+(?:von|ab)\s+((?:[a-zA-ZäöüÄÖÜ]{2}\.?\s*)?\d{1,2}\.\d{1,2}\.?(?:\d{2,4})?)(?:\s+bis\s+((?:[a-zA-ZäöüÄÖÜ]{2}\.?\s*)?\d{1,2}\.\d{1,2}\.?(?:\d{2,4})?))?', clean_text(dialog.text), re.IGNORECASE)
+            if valid_match:
+                valid_from = valid_match.group(1).strip()
+                if valid_match.group(2):
+                    valid_until = valid_match.group(2).strip()
+                
             offers.append({
                 "id": offer_id,
                 "title": title,
@@ -215,7 +261,9 @@ def scrape_edeka_offers(offers_url: str, market_id: Optional[str] = None) -> Lis
                 "image_url": image_url,
                 "description": description,
                 "base_price": base_price,
-                "badge": badge
+                "badge": badge,
+                "valid_from": valid_from,
+                "valid_until": valid_until
             })
             
         return offers
@@ -375,6 +423,8 @@ def scrape_lidl_offers(offers_url: str, market_id: Optional[str] = None) -> List
                                 if not description:
                                     description = clean_text(p.get("description") or "")
                                     
+                                valid_from, valid_until = extract_lidl_validity(p)
+                                    
                                 seen_ids.add(product_id)
                                 offers.append({
                                     "id": f"lidl-{product_id}",
@@ -385,7 +435,9 @@ def scrape_lidl_offers(offers_url: str, market_id: Optional[str] = None) -> List
                                     "image_url": image_url,
                                     "description": description,
                                     "base_price": None,
-                                    "badge": badge
+                                    "badge": badge,
+                                    "valid_from": valid_from,
+                                    "valid_until": valid_until
                                 })
                 except Exception as nuxt_err:
                     print(f"Error parsing Nuxt data on {url}: {nuxt_err}")
@@ -434,6 +486,8 @@ def scrape_lidl_offers(offers_url: str, market_id: Optional[str] = None) -> List
                     if not description:
                         description = clean_text(p.get("description") or "")
                         
+                    valid_from, valid_until = extract_lidl_validity(p)
+                        
                     seen_ids.add(product_id)
                     offers.append({
                         "id": f"lidl-{product_id}",
@@ -444,7 +498,9 @@ def scrape_lidl_offers(offers_url: str, market_id: Optional[str] = None) -> List
                         "image_url": image_url,
                         "description": description,
                         "base_price": None,
-                        "badge": badge
+                        "badge": badge,
+                        "valid_from": valid_from,
+                        "valid_until": valid_until
                     })
                 except Exception as div_err:
                     pass
@@ -506,7 +562,9 @@ def update_market_offers_in_db(market_id: str, session: Session) -> bool:
             image_url=o_data.get("image_url"),
             description=o_data.get("description"),
             base_price=o_data.get("base_price"),
-            badge=o_data.get("badge")
+            badge=o_data.get("badge"),
+            valid_from=o_data.get("valid_from"),
+            valid_until=o_data.get("valid_until")
         )
         session.add(offer)
         
