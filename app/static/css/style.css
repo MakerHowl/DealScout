@@ -71,6 +71,8 @@ body {
     display: flex;
     flex-direction: column;
     gap: 2rem;
+    min-width: 0;
+    overflow-x: hidden;
 }
 
 /* Header */
@@ -686,29 +688,63 @@ body {
 /* Responsive adjustments */
 @media (max-width: 640px) {
     .container {
-        padding: 1.5rem 1rem;
+        padding: 0.75rem 0.5rem;
+        gap: 1rem;
+        width: 100%;
+        overflow-x: hidden;
+    }
+    
+    .app-header {
+        margin-bottom: 0.25rem;
     }
     
     .app-header h1 {
-        font-size: 2.25rem;
+        font-size: 1.85rem;
+    }
+    
+    .tagline {
+        font-size: 0.9rem;
     }
     
     .glass-card {
-        padding: 1.5rem;
+        padding: 1.15rem 0.85rem;
+        border-radius: 14px;
+        width: 100%;
     }
     
     .search-row {
         flex-direction: column;
         align-items: stretch;
+        gap: 0.75rem;
     }
     
     .active-market-header {
         flex-direction: column;
         align-items: flex-start;
+        gap: 0.85rem;
+        width: 100%;
+    }
+    
+    .market-title-row {
+        flex-wrap: wrap !important;
+        gap: 0.5rem !important;
+    }
+    
+    .market-name {
+        font-size: 1.35rem !important;
+        word-break: break-word !important;
+        line-height: 1.25 !important;
+    }
+    
+    .market-address {
+        font-size: 0.85rem !important;
+        margin-top: 0.15rem !important;
+        word-break: break-word !important;
     }
     
     .market-actions {
         width: 100%;
+        gap: 0.5rem;
     }
     
     .market-actions form, 
@@ -720,8 +756,245 @@ body {
         width: 100%;
     }
     
+    /* Avoid overflow in market select button list on small screens */
+    .market-select-btn {
+        padding: 0.85rem 3.25rem 0.85rem 0.85rem !important;
+        border-radius: 10px !important;
+    }
+    
+    .market-item-content {
+        gap: 0.75rem !important;
+        min-width: 0 !important;
+        width: 100% !important;
+    }
+    
+    .market-logo-badge {
+        width: 32px !important;
+        height: 32px !important;
+        font-size: 1rem !important;
+        border-radius: 8px !important;
+        flex-shrink: 0 !important;
+    }
+    
+    .market-item-details {
+        min-width: 0 !important;
+        gap: 0.15rem !important;
+    }
+    
+    .market-item-name {
+        font-size: 0.95rem !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+    
+    .market-item-addr {
+        font-size: 0.75rem !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+    
+    .market-card .favorite-toggle-btn {
+        right: 0.75rem !important;
+    }
+    
+    /* 2-Column Grid on Mobile for better space utilization */
     .offers-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 0.6rem !important;
+    }
+    
+    .offer-card {
+        border-radius: 12px !important;
+    }
+    
+    .offer-image-container {
+        padding: 0.6rem !important;
+        aspect-ratio: 1.1;
+    }
+    
+    .offer-details {
+        padding: 0.6rem !important;
+        gap: 0.2rem !important;
+    }
+    
+    .offer-title {
+        font-size: 0.85rem !important;
+        line-height: 1.2 !important;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        height: 2.4em; /* Fix layout height to match 2 lines */
+    }
+    
+    .offer-description {
+        font-size: 0.725rem !important;
+        line-height: 1.25 !important;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        height: 2.5em; /* Clamps and limits description height */
+        margin-bottom: 0.1rem !important;
+    }
+    
+    .offer-base-price {
+        font-size: 0.65rem !important;
+    }
+    
+    .offer-badge {
+        top: 0.4rem !important;
+        left: 0.4rem !important;
+        padding: 0.15rem 0.35rem !important;
+        font-size: 0.55rem !important;
+        border-radius: 4px !important;
+    }
+    
+    .offer-discount {
+        bottom: 0.4rem !important;
+        right: 0.4rem !important;
+        padding: 0.1rem 0.3rem !important;
+        font-size: 0.6rem !important;
+        border-radius: 3px !important;
+    }
+    
+    .offer-prices {
+        gap: 0.35rem !important;
+        margin-top: 0.35rem !important;
+    }
+    
+    .price-container {
+        padding: 0.25rem 0.35rem !important;
+        min-width: 60px !important;
+        border-radius: 6px !important;
+    }
+    
+    .price-label {
+        font-size: 0.5rem !important;
+        margin-bottom: 0.05rem !important;
+    }
+    
+    .price-value {
+        font-size: 0.85rem !important;
+    }
+    
+    .offer-validity {
+        font-size: 0.65rem !important;
+        margin-top: 0.1rem !important;
+    }
+    
+    /* Section titles */
+    .section-title {
+        font-size: 1.5rem !important;
+        line-height: 1.3 !important;
+        word-break: break-word !important;
+    }
+    
+    .section-desc {
+        font-size: 0.85rem !important;
+    }
+    
+    /* Favorites offers page adjustments */
+    .favorites-offers-list {
+        gap: 1.25rem !important;
+    }
+    
+    .favorite-market-section {
+        border-left-width: 3px !important;
+    }
+    
+    .market-section-header {
+        gap: 0.75rem !important;
+        padding-bottom: 0.85rem !important;
+        margin-bottom: 0.85rem !important;
+    }
+    
+    .market-section-info {
+        min-width: 0 !important;
+        width: 100% !important;
+    }
+    
+    .market-title {
+        font-size: 1.15rem !important;
+        word-break: break-word !important;
+        overflow-wrap: break-word !important;
+    }
+    
+    .market-section-actions {
+        gap: 0.5rem !important;
+    }
+    
+    .btn-sm {
+        padding: 0.4rem 0.75rem !important;
+        font-size: 0.8rem !important;
+    }
+    
+    /* Horizontal scroll row */
+    .offers-scroll-row {
+        gap: 0.75rem !important;
+        padding: 0.25rem 0.15rem 1rem 0.15rem !important;
+    }
+    
+    .market-offers-container {
+        min-height: 80px !important;
+    }
+    
+    /* Favorite products layout */
+    .favorite-products-layout {
+        gap: 1rem !important;
+    }
+    
+    .favorite-products-offers-section {
+        min-width: 0 !important;
+        overflow: hidden !important;
+    }
+    
+    .section-title-sub {
+        font-size: 1.2rem !important;
+    }
+    
+    /* Empty state prompts */
+    .no-favorites-prompt {
+        padding: 2rem 1rem !important;
+    }
+    
+    .no-favorites-prompt h3 {
+        font-size: 1.2rem !important;
+    }
+    
+    .no-favorites-prompt p {
+        font-size: 0.85rem !important;
+    }
+    
+    .prompt-emoji {
+        font-size: 2.5rem !important;
+    }
+    
+    .no-offers-container {
+        padding: 3rem 1rem !important;
+    }
+    
+    .no-offers-emoji {
+        font-size: 2.5rem !important;
+    }
+    
+    .no-offers-container h3 {
+        font-size: 1.15rem !important;
+    }
+    
+    .no-offers-container p {
+        font-size: 0.85rem !important;
+    }
+    
+    .loading-placeholder {
+        padding: 3rem 1rem !important;
+    }
+    
+    /* Footer */
+    .app-footer p {
+        font-size: 0.75rem !important;
     }
 }
 
@@ -871,10 +1144,19 @@ body {
     font-size: 1.05rem;
 }
 
+.section-title-sub {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    word-break: break-word;
+}
+
 .favorites-offers-list {
     display: flex;
     flex-direction: column;
     gap: 2rem;
+    min-width: 0;
+    width: 100%;
 }
 
 /* Favorite Market Section inside overview */
@@ -896,12 +1178,16 @@ body {
 .market-section-info {
     display: flex;
     flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
 }
 
 .market-title {
     font-size: 1.5rem;
     font-weight: 600;
     margin-top: 0.25rem;
+    word-break: break-word;
+    overflow-wrap: break-word;
 }
 
 .market-section-actions {
@@ -1153,17 +1439,74 @@ body {
 }
 
 /* Favorite Products View styles */
+.divider {
+    margin: 1.5rem 0;
+    border: none;
+    border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.empty-state-text {
+    color: var(--text-secondary);
+    font-style: italic;
+    font-weight: 300;
+}
+
 .favorite-products-layout {
     display: grid;
-    grid-template-columns: 360px 1fr;
+    grid-template-columns: 360px minmax(0, 1fr);
     gap: 2rem;
     align-items: start;
 }
 
+.product-offers-group {
+    padding: 1.5rem;
+    border-left: 4px solid var(--primary);
+}
+
+.product-offers-group-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    padding-bottom: 0.75rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.product-group-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.badge-store-count {
+    background: var(--primary);
+    color: #fff;
+    margin-bottom: 0;
+    font-size: 0.7rem;
+    padding: 0.15rem 0.5rem;
+}
+
 @media (max-width: 900px) {
     .favorite-products-layout {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
     }
+}
+
+.favorite-products-offers-section {
+    min-width: 0;
+    overflow: hidden;
+    width: 100%;
+}
+
+.favorite-products-offers-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    min-width: 0;
+    width: 100%;
 }
 
 .favorite-products-manage {
@@ -1229,6 +1572,8 @@ body {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
+    min-width: 0;
+    width: 100%;
 }
 
 .offer-list-item {
@@ -1376,14 +1721,386 @@ body {
 }
 
 @media (max-width: 600px) {
-    .offer-list-item {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 0.75rem;
+    /* Maintain horizontal compact list layout for favorite products offers on mobile using CSS Grid */
+    /* Override favorite product group padding to avoid overflowing viewport */
+    .product-offers-group {
+        padding: 1rem 0.65rem !important;
+        border-radius: 12px !important;
     }
     
+    .product-offers-group-header {
+        margin-bottom: 0.75rem !important;
+        padding-bottom: 0.5rem !important;
+        gap: 0.35rem !important;
+    }
+    
+    .product-group-title {
+        font-size: 1.05rem !important;
+    }
+    
+    .offer-list-item {
+        display: grid !important;
+        grid-template-columns: 45px 1fr !important;
+        grid-template-rows: auto auto !important;
+        grid-template-areas: 
+            "thumb details"
+            "thumb prices" !important;
+        align-items: start !important;
+        padding: 0.5rem 0.65rem !important;
+        gap: 0.35rem 0.65rem !important;
+        border-radius: 12px !important;
+    }
+    
+    .offer-list-img-container {
+        grid-area: thumb !important;
+        width: 45px !important;
+        height: 45px !important;
+        padding: 0.15rem !important;
+        border-radius: 6px !important;
+        margin-top: 0.15rem !important;
+    }
+    
+    .offer-list-details {
+        grid-area: details !important;
+        gap: 0.1rem !important;
+        min-width: 0 !important;
+    }
+    
+    .offer-list-title-row {
+        gap: 0.35rem !important;
+        align-items: center !important;
+        flex-wrap: wrap !important;
+        min-width: 0 !important;
+    }
+    
+    .offer-list-title {
+        font-size: 0.8rem !important;
+        white-space: normal !important;
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        flex-grow: 1 !important;
+        min-width: 0 !important;
+    }
+    
+    .offer-list-store {
+        font-size: 0.6rem !important;
+        padding: 0.1rem 0.25rem !important;
+        border-radius: 4px !important;
+        max-width: 120px !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+        display: inline-block !important;
+        flex-shrink: 0 !important;
+    }
+    
+    .offer-list-desc {
+        font-size: 0.75rem !important;
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        margin: 0 !important;
+    }
+    
+    .offer-list-meta {
+        gap: 0.4rem !important;
+        font-size: 0.65rem !important;
+        flex-wrap: wrap !important;
+    }
+    
+    .offer-list-validity {
+        font-size: 0.65rem !important;
+        margin-left: 0 !important;
+    }
+    
+    /* Layout prices as a horizontal flex row directly below the details */
     .offer-list-prices {
-        justify-content: flex-end;
+        grid-area: prices !important;
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 0.75rem !important;
+        margin-top: 0.25rem !important;
+        flex-shrink: 0 !important;
+    }
+    
+    .offer-list-price-box {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+    }
+    
+    .offer-list-price-label {
+        font-size: 0.5rem !important;
+        margin-bottom: 0.05rem !important;
+    }
+    
+    .offer-list-price-val {
+        font-size: 0.85rem !important;
+    }
+    
+    /* Limit the size of favorite product badges to prevent horizontal overflow */
+    .product-badge {
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
+    
+    .product-badge span {
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+        max-width: 160px !important;
+    }
+    
+    /* Make mini cards in horizontal scroll-row more compact on mobile */
+    .offer-card-mini {
+        flex: 0 0 170px !important;
+        border-radius: 12px !important;
+    }
+    
+    .offer-image-container-mini {
+        height: 110px !important;
+        padding: 0.35rem !important;
+    }
+    
+    .offer-image-mini {
+        max-height: 100%;
+        max-width: 100%;
+    }
+    
+    .offer-badge-mini {
+        top: 0.4rem !important;
+        left: 0.4rem !important;
+        font-size: 0.55rem !important;
+        padding: 0.2rem 0.4rem !important;
+        border-radius: 5px !important;
+    }
+    
+    .offer-discount-mini {
+        bottom: 0.4rem !important;
+        right: 0.4rem !important;
+        font-size: 0.65rem !important;
+        padding: 0.15rem 0.35rem !important;
+        border-radius: 4px !important;
+    }
+    
+    .offer-details-mini {
+        padding: 0.6rem 0.75rem !important;
+        gap: 0.2rem !important;
+    }
+    
+    .offer-title-mini {
+        font-size: 0.85rem !important;
+        height: 2.4em;
+        line-height: 1.2;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    
+    .offer-desc-mini {
+        font-size: 0.75rem !important;
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        height: 1.3em;
+        margin: 0 !important;
+    }
+    
+    .offer-base-price-mini {
+        font-size: 0.65rem !important;
+    }
+    
+    .offer-validity-mini {
+        font-size: 0.65rem !important;
+    }
+    
+    .offer-prices-mini {
+        gap: 0.35rem !important;
+        margin-top: 0.25rem !important;
+    }
+    
+    .price-container-mini {
+        padding: 0.25rem 0.35rem !important;
+        min-width: 60px !important;
+        border-radius: 6px !important;
+    }
+    
+    .price-label-mini {
+        font-size: 0.5rem !important;
+    }
+    
+    .price-value-mini {
+        font-size: 0.8rem !important;
+    }
+}
+
+/* ==========================================
+   Settings Page Styles
+   ========================================== */
+
+.settings-wrapper {
+    max-width: 650px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    min-width: 0;
+}
+
+.settings-field {
+    margin-bottom: 1.25rem;
+}
+
+.settings-label {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: var(--text-secondary);
+}
+
+.settings-mono {
+    font-family: monospace;
+}
+
+.settings-info-box {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.settings-info-row {
+    font-size: 0.95rem;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    word-break: break-word;
+}
+
+.settings-info-value {
+    color: var(--text-primary);
+}
+
+.settings-info-highlight {
+    color: var(--primary);
+}
+
+.settings-help-box {
+    font-size: 0.825rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+    margin-bottom: 1.5rem;
+    background: rgba(59, 130, 246, 0.04);
+    border-left: 3px solid var(--primary);
+    padding: 0.75rem 1rem;
+    border-radius: 4px 8px 8px 4px;
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+
+.settings-help-title {
+    color: var(--text-primary);
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.settings-help-examples {
+    margin-top: 0.25rem;
+}
+
+.settings-feedback {
+    margin-bottom: 1.25rem;
+    min-height: 1.25rem;
+}
+
+.settings-full-btn {
+    width: 100%;
+}
+
+.settings-desc-extra {
+    margin-bottom: 1.5rem;
+}
+
+.settings-checkbox-row {
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.settings-checkbox {
+    width: 1.2rem;
+    height: 1.2rem;
+    cursor: pointer;
+    accent-color: var(--primary);
+    flex-shrink: 0;
+}
+
+.settings-checkbox-label {
+    font-size: 1rem;
+    font-weight: 400;
+    cursor: pointer;
+    color: var(--text-primary);
+}
+
+.settings-buttons-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.settings-action-btn {
+    flex: 1;
+    min-width: 120px;
+}
+
+@media (max-width: 640px) {
+    .settings-wrapper {
+        gap: 1rem;
+    }
+    
+    .settings-info-box {
+        padding: 0.85rem;
+    }
+    
+    .settings-info-row {
+        font-size: 0.85rem;
+    }
+    
+    .settings-help-box {
+        padding: 0.6rem 0.75rem;
+        font-size: 0.75rem;
+    }
+    
+    .settings-checkbox-row {
+        margin-bottom: 1rem;
+    }
+    
+    .settings-checkbox-label {
+        font-size: 0.9rem;
+    }
+    
+    .settings-buttons-row {
+        gap: 0.5rem;
+    }
+    
+    .settings-action-btn {
+        width: 100%;
+        flex: 1 1 100%; /* Force stacking on very small screens if needed, otherwise fill */
     }
 }
 
@@ -1399,4 +2116,97 @@ body {
     background: #0050aa;
     color: #ffffff;
     border: 1px solid #fff000;
+}
+
+/* ==========================================
+   Mobile Bottom Navigation Bar Styles
+   ========================================== */
+
+/* Hide mobile bottom navigation bar on desktop */
+.mobile-nav-bar {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    /* Hide desktop nav inside header on mobile */
+    .desktop-nav {
+        display: none !important;
+    }
+    
+    /* Ensure body content doesn't get cut off by fixed navigation */
+    body {
+        padding-bottom: 75px !important;
+    }
+    
+    /* Fixed glassmorphism bar at bottom */
+    .mobile-nav-bar {
+        display: flex;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 65px;
+        background: rgba(11, 15, 25, 0.8);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        z-index: 1000;
+        justify-content: space-around;
+        align-items: center;
+        padding: 0 0.5rem;
+        box-shadow: 0 -5px 25px rgba(0, 0, 0, 0.5);
+    }
+    
+    /* Individual mobile tab items */
+    .mobile-nav-link {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        color: var(--text-secondary);
+        text-decoration: none;
+        flex: 1;
+        height: 100%;
+        transition: var(--transition);
+        font-size: 0.725rem;
+        font-weight: 500;
+        opacity: 0.85;
+    }
+    
+    .mobile-nav-link:hover {
+        color: var(--text-primary);
+        opacity: 1;
+    }
+    
+    .mobile-nav-icon {
+        font-size: 1.25rem;
+        line-height: 1;
+        transition: var(--transition);
+    }
+    
+    /* Active tab style */
+    .mobile-nav-link.active {
+        color: var(--primary);
+        opacity: 1;
+    }
+    
+    .mobile-nav-link.active .mobile-nav-icon {
+        transform: translateY(-2px) scale(1.1);
+        filter: drop-shadow(0 0 6px var(--primary-glow));
+    }
+    
+    .mobile-nav-link.active .mobile-nav-text {
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+    
+    .mobile-nav-text {
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        text-align: center;
+        padding: 0 0.1rem;
+    }
 }

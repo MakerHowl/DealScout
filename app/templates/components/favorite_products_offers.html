@@ -19,14 +19,14 @@
             <p>Aktuell gibt es in deinen Lieblingsmärkten keine Angebote, die zu deinen Lieblingsprodukten passen.</p>
         </div>
     {% else %}
-        <div class="favorite-products-offers-list" style="display: flex; flex-direction: column; gap: 1.5rem;">
+        <div class="favorite-products-offers-list">
             {% for prod_name, offers in offers_by_product.items() %}
-                <div class="product-offers-group glass-card fade-in" style="padding: 1.5rem; border-left: 4px solid var(--primary);">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 0.75rem;">
-                        <h4 style="font-size: 1.25rem; font-weight: 600; color: var(--text-primary); margin: 0;">
+                <div class="product-offers-group glass-card fade-in">
+                    <div class="product-offers-group-header">
+                        <h4 class="product-group-title">
                             ❤️ {{ prod_name }}
                         </h4>
-                        <span class="badge-store" style="background: var(--primary); color: #fff; margin-bottom: 0; font-size: 0.7rem; padding: 0.15rem 0.5rem;">
+                        <span class="badge-store badge-store-count">
                             {{ offers|length }} {% if offers|length == 1 %}Angebot{% else %}Angebote{% endif %}
                         </span>
                     </div>

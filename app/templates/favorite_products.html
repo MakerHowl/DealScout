@@ -26,10 +26,10 @@
                            required>
                     <button type="submit" class="btn btn-primary">Hinzufügen</button>
                 </div>
-                <div id="add-product-feedback" class="mt-2 text-sm" style="margin-top: 0.5rem; min-height: 1.25rem;"></div>
+                <div id="add-product-feedback" class="settings-feedback"></div>
             </form>
             
-            <hr class="divider" style="margin: 1.5rem 0; border: none; border-top: 1px solid rgba(255,255,255,0.06);">
+            <hr class="divider">
             
             <h3 class="card-title">Deine Liste</h3>
             <div id="favorite-products-list-container" 
@@ -41,7 +41,7 @@
 
         <!-- Offers Section -->
         <section class="favorite-products-offers-section">
-            <h3 class="section-title-sub" style="font-size: 1.5rem; font-weight: 600; margin-bottom: 1rem;">Aktuelle Angebote</h3>
+            <h3 class="section-title-sub">Aktuelle Angebote</h3>
             <div id="favorite-products-offers-container" 
                  hx-get="/favorite-products-offers" 
                  hx-trigger="load, update-favorite-products from:body">

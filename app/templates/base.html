@@ -26,7 +26,7 @@
                 <h1>DealScout</h1>
             </div>
             <p class="tagline">Finde die besten Supermarkt-Angebote in deiner Nähe</p>
-            <nav class="nav-bar">
+            <nav class="nav-bar desktop-nav">
                 <a href="/" class="nav-link {% if active_page == 'search' %}active{% endif %}">🔍 Markt-Suche</a>
                 <a href="/favorites-offers" class="nav-link {% if active_page == 'fav_offers' %}active{% endif %}">⭐ Favoriten-Angebote</a>
                 <a href="/favorite-products" class="nav-link {% if active_page == 'fav_products' %}active{% endif %}">❤️ Lieblingsprodukte</a>
@@ -42,5 +42,25 @@
             <p>© 2026 DealScout. Alle Preise ohne Gewähr. Beginnend mit Edeka.</p>
         </footer>
     </div>
+    
+    <!-- Mobile Bottom Navigation Bar -->
+    <nav class="mobile-nav-bar">
+        <a href="/" class="mobile-nav-link {% if active_page == 'search' %}active{% endif %}">
+            <span class="mobile-nav-icon">🔍</span>
+            <span class="mobile-nav-text">Suche</span>
+        </a>
+        <a href="/favorites-offers" class="mobile-nav-link {% if active_page == 'fav_offers' %}active{% endif %}">
+            <span class="mobile-nav-icon">⭐</span>
+            <span class="mobile-nav-text">Angebote</span>
+        </a>
+        <a href="/favorite-products" class="mobile-nav-link {% if active_page == 'fav_products' %}active{% endif %}">
+            <span class="mobile-nav-icon">❤️</span>
+            <span class="mobile-nav-text">Produkte</span>
+        </a>
+        <a href="/settings" class="mobile-nav-link {% if active_page == 'settings' %}active{% endif %}">
+            <span class="mobile-nav-icon">⚙️</span>
+            <span class="mobile-nav-text">Einstellungen</span>
+        </a>
+    </nav>
 </body>
 </html>

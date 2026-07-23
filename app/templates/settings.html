@@ -8,7 +8,7 @@
         <p class="section-desc">Konfiguriere Verbindungsmethoden wie Pushover und den automatischen Aktualisierungs-Zeitplan für deine Angebote.</p>
     </div>
 
-    <div class="fade-in" style="max-width: 650px; margin: 0 auto; display: flex; flex-direction: column; gap: 2rem;">
+    <div class="settings-wrapper fade-in">
         
         <!-- Background Scheduler Config (Cron) -->
         <section class="glass-card">
@@ -17,37 +17,36 @@
             
             <form id="cron-form">
                 <!-- Cron Input -->
-                <div style="margin-bottom: 1rem;">
-                    <label for="cron" style="display: block; font-size: 0.9rem; font-weight: 500; margin-bottom: 0.5rem; color: var(--text-secondary);">Cron-Ausdruck</label>
+                <div class="settings-field">
+                    <label for="cron" class="settings-label">Cron-Ausdruck</label>
                     <input type="text" 
                            id="cron" 
                            name="cron" 
                            value="{{ cron_expr }}"
                            placeholder="z.B. 0 0 * * * oder 0 */6 * * *" 
-                           class="form-input" 
-                           style="font-family: monospace;"
+                           class="form-input settings-mono"
                            required>
                 </div>
 
                 <!-- Next Run Info Display -->
-                <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 10px; padding: 1rem; margin-bottom: 1.25rem; display: flex; flex-direction: column; gap: 0.5rem;">
-                    <p style="font-size: 0.95rem; margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                <div class="settings-info-box">
+                    <p class="settings-info-row">
                         <span>🔄</span>
                         <span>Letzte automatische Aktualisierung:</span>
-                        <strong style="color: var(--text-primary);">{{ last_refresh_str }}</strong>
+                        <strong class="settings-info-value">{{ last_refresh_str }}</strong>
                     </p>
-                    <p style="font-size: 0.95rem; margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                    <p class="settings-info-row">
                         <span>📅</span>
                         <span>Nächste geplante Aktualisierung:</span>
-                        <strong id="next-run-time" style="color: var(--primary);">{{ next_run_str }}</strong>
+                        <strong id="next-run-time" class="settings-info-highlight">{{ next_run_str }}</strong>
                     </p>
                 </div>
                 
                 <!-- Cron Help / Explanation -->
-                <div style="font-size: 0.825rem; color: var(--text-secondary); line-height: 1.4; margin-bottom: 1.5rem; background: rgba(59, 130, 246, 0.04); border-left: 3px solid var(--primary); padding: 0.75rem 1rem; border-radius: 4px 8px 8px 4px;">
-                    <strong style="color: var(--text-primary); display: block; margin-bottom: 0.25rem;">ℹ️ Cron-Syntax Spickzettel:</strong>
+                <div class="settings-help-box">
+                    <strong class="settings-help-title">ℹ️ Cron-Syntax Spickzettel:</strong>
                     <code>* * * * *</code> = Minute (0-59) | Stunde (0-23) | Tag (1-31) | Monat (1-12) | Wochentag (0-6)
-                    <div style="margin-top: 0.25rem;">
+                    <div class="settings-help-examples">
                         • <code>0 * * * *</code> &rarr; Zu jeder vollen Stunde<br>
                         • <code>0 */6 * * *</code> &rarr; Alle 6 Stunden (00:00, 06:00, 12:00, 18:00)<br>
                         • <code>0 0 * * *</code> &rarr; Jeden Tag um Mitternacht (Standard)<br>
@@ -56,14 +55,13 @@
                 </div>
                 
                 <!-- Feedback Container -->
-                <div id="cron-feedback" style="margin-bottom: 1.25rem; min-height: 1.25rem;"></div>
+                <div id="cron-feedback" class="settings-feedback"></div>
                 
                 <button type="button" 
                         hx-post="/settings/cron" 
                         hx-target="#cron-feedback" 
                         hx-include="#cron-form"
-                        class="btn btn-primary" 
-                        style="width: 100%;">
+                        class="btn btn-primary settings-full-btn">
                     Zeitplan Speichern
                 </button>
             </form>
@@ -72,12 +70,12 @@
         <!-- Pushover Config -->
         <section class="glass-card">
             <h3 class="card-title">Pushover-Integration</h3>
-            <p class="card-desc" style="margin-bottom: 1.5rem;">Pushover ermöglicht es dir, Echtzeit-Push-Benachrichtigungen auf deinem Smartphone oder Tablet zu erhalten, wenn neue Angebote für deine Lieblingsprodukte gefunden werden.</p>
+            <p class="card-desc settings-desc-extra">Pushover ermöglicht es dir, Echtzeit-Push-Benachrichtigungen auf deinem Smartphone oder Tablet zu erhalten, wenn neue Angebote für deine Lieblingsprodukte gefunden werden.</p>
             
             <form id="pushover-form">
                 <!-- User Key Input -->
-                <div style="margin-bottom: 1.25rem;">
-                    <label for="user_key" style="display: block; font-size: 0.9rem; font-weight: 500; margin-bottom: 0.5rem; color: var(--text-secondary);">User Key (User-Schlüssel)</label>
+                <div class="settings-field">
+                    <label for="user_key" class="settings-label">User Key (User-Schlüssel)</label>
                     <input type="text" 
                            id="user_key" 
                            name="user_key" 
@@ -88,8 +86,8 @@
                 </div>
                 
                 <!-- API Token Input -->
-                <div style="margin-bottom: 1.25rem;">
-                    <label for="api_token" style="display: block; font-size: 0.9rem; font-weight: 500; margin-bottom: 0.5rem; color: var(--text-secondary);">API Token / App Token (Anwendungs-Schlüssel)</label>
+                <div class="settings-field">
+                    <label for="api_token" class="settings-label">API Token / App Token (Anwendungs-Schlüssel)</label>
                     <input type="text" 
                            id="api_token" 
                            name="api_token" 
@@ -100,37 +98,35 @@
                 </div>
                 
                 <!-- Enabled Toggle/Checkbox -->
-                <div style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem;">
+                <div class="settings-checkbox-row">
                     <input type="checkbox" 
                            id="enabled" 
                            name="enabled" 
                            value="true"
                            {% if pushover.enabled %}checked{% endif %}
-                           style="width: 1.2rem; height: 1.2rem; cursor: pointer; accent-color: var(--primary);">
-                    <label for="enabled" style="font-size: 1rem; font-weight: 400; cursor: pointer; color: var(--text-primary);">
+                           class="settings-checkbox">
+                    <label for="enabled" class="settings-checkbox-label">
                         Benachrichtigungen aktivieren
                     </label>
                 </div>
                 
                 <!-- Feedback Container -->
-                <div id="pushover-feedback" style="margin-bottom: 1.25rem; min-height: 1.25rem;"></div>
+                <div id="pushover-feedback" class="settings-feedback"></div>
                 
                 <!-- Action Buttons -->
-                <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                <div class="settings-buttons-row">
                     <button type="button" 
                             hx-post="/settings/pushover" 
                             hx-target="#pushover-feedback" 
                             hx-include="#pushover-form"
-                            class="btn btn-primary" 
-                            style="flex: 1; min-width: 120px;">
+                            class="btn btn-primary settings-action-btn">
                         Speichern
                     </button>
                     <button type="button" 
                             hx-post="/settings/pushover/test" 
                             hx-target="#pushover-feedback" 
                             hx-include="#pushover-form"
-                            class="btn btn-secondary" 
-                            style="flex: 1; min-width: 120px;">
+                            class="btn btn-secondary settings-action-btn">
                         Testen
                     </button>
                 </div>
