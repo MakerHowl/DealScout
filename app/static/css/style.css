@@ -2145,16 +2145,19 @@ body {
         bottom: 0;
         left: 0;
         right: 0;
+        width: 100%;
+        max-width: 100vw;
         height: 65px;
         background: rgba(11, 15, 25, 0.8);
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
         border-top: 1px solid rgba(255, 255, 255, 0.08);
         z-index: 1000;
-        justify-content: space-around;
+        justify-content: space-between;
         align-items: center;
-        padding: 0 0.5rem;
+        padding: 0 0.25rem;
         box-shadow: 0 -5px 25px rgba(0, 0, 0, 0.5);
+        box-sizing: border-box;
     }
     
     /* Individual mobile tab items */
@@ -2167,6 +2170,7 @@ body {
         color: var(--text-secondary);
         text-decoration: none;
         flex: 1;
+        min-width: 0;
         height: 100%;
         transition: var(--transition);
         font-size: 0.725rem;
