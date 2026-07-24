@@ -14,10 +14,34 @@
     <!-- Custom Premium Stylesheet -->
     <link rel="stylesheet" href="/static/css/style.css?v=2.3">
     
+    <!-- PWA Meta & Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="DealScout">
+    <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
+    
     <!-- Local HTMX -->
     <script src="/static/js/htmx.min.js"></script>
 </head>
 <body>
+    <!-- PWA Install Banner -->
+    <div id="pwa-install-banner" class="pwa-banner" style="display: none;">
+        <div class="pwa-banner-content">
+            <span class="pwa-banner-icon">📲</span>
+            <div class="pwa-banner-text">
+                <strong>DealScout App installieren</strong>
+                <small>Als eigenständige App auf dem Startbildschirm nutzen</small>
+            </div>
+        </div>
+        <div class="pwa-banner-actions">
+            <button id="pwa-install-btn" class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">Installieren</button>
+            <button id="pwa-close-btn" class="btn" style="padding: 0.4rem 0.6rem; font-size: 0.85rem; background: transparent; color: var(--text-secondary); border: none;">✕</button>
+        </div>
+    </div>
+
     <div class="glow-bg"></div>
     <div class="container">
         <header class="app-header">
@@ -79,5 +103,49 @@
         </a>
     </nav>
     {% endif %}
+
+    <!-- PWA Service Worker & Install Handler -->
+    <script>
+        // Service Worker registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('DealScout Service Worker registered:', reg.scope))
+                    .catch(err => console.error('Service Worker registration failed:', err));
+            });
+        }
+
+        // Custom Install Prompt logic
+        let deferredPrompt;
+        const pwaBanner = document.getElementById('pwa-install-banner');
+        const installBtn = document.getElementById('pwa-install-btn');
+        const closeBtn = document.getElementById('pwa-close-btn');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            if (pwaBanner && !localStorage.getItem('pwa_banner_dismissed')) {
+                pwaBanner.style.display = 'flex';
+            }
+        });
+
+        if (installBtn) {
+            installBtn.addEventListener('click', async () => {
+                if (!deferredPrompt) return;
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                console.log('PWA install prompt outcome:', outcome);
+                deferredPrompt = null;
+                if (pwaBanner) pwaBanner.style.display = 'none';
+            });
+        }
+
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                if (pwaBanner) pwaBanner.style.display = 'none';
+                localStorage.setItem('pwa_banner_dismissed', 'true');
+            });
+        }
+    </script>
 </body>
 </html>

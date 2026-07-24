@@ -1,7 +1,7 @@
 import asyncio
 import uuid
 from fastapi import FastAPI, Request, Response, Form, Cookie, Depends, status
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.security import OAuth2PasswordRequestForm
@@ -25,6 +25,20 @@ app = FastAPI(title="Supermarket Offers Search")
 # Mount static files and setup templates
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 templates = Jinja2Templates(directory="app/templates")
+
+# PWA Endpoints
+@app.get("/manifest.json", include_in_schema=False)
+async def get_manifest():
+    return FileResponse("app/static/manifest.json", media_type="application/json")
+
+@app.get("/sw.js", include_in_schema=False)
+async def get_sw():
+    return FileResponse(
+        "app/static/js/sw.js", 
+        media_type="application/javascript", 
+        headers={"Service-Worker-Allowed": "/"}
+    )
+
 
 @app.on_event("startup")
 def on_startup():
