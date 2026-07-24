@@ -132,5 +132,53 @@
                 </div>
             </form>
         </section>
+
+        <!-- Password Change Section -->
+        <section class="glass-card">
+            <h3 class="card-title">Passwort ändern 🔒</h3>
+            <p class="card-desc">Ändere dein Zugangspasswort für deinen DealScout Account.</p>
+            
+            <form id="password-form">
+                <div class="settings-field">
+                    <label for="current_password" class="settings-label">Aktuelles Passwort</label>
+                    <input type="password" 
+                           id="current_password" 
+                           name="current_password" 
+                           placeholder="Dein bisheriges Passwort" 
+                           class="form-input" 
+                           required>
+                </div>
+                
+                <div class="settings-field">
+                    <label for="new_password" class="settings-label">Neues Passwort</label>
+                    <input type="password" 
+                           id="new_password" 
+                           name="new_password" 
+                           placeholder="Mindestens 6 Zeichen" 
+                           class="form-input" 
+                           required>
+                </div>
+
+                <div class="settings-field">
+                    <label for="confirm_password" class="settings-label">Neues Passwort bestätigen</label>
+                    <input type="password" 
+                           id="confirm_password" 
+                           name="confirm_password" 
+                           placeholder="Wiederhole das neue Passwort" 
+                           class="form-input" 
+                           required>
+                </div>
+                
+                <div id="password-feedback" class="settings-feedback"></div>
+                
+                <button type="button" 
+                        hx-post="/settings/change-password" 
+                        hx-target="#password-feedback" 
+                        hx-include="#password-form"
+                        class="btn btn-primary settings-full-btn">
+                    Passwort Speichern
+                </button>
+            </form>
+        </section>
     </div>
 {% endblock %}

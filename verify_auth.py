@@ -181,6 +181,40 @@ def test_auth_system():
         assert u2_check is None, "user2 should have been deleted from database"
     print("-> Admin user deletion passed successfully!")
 
+    print("8. Testing Password Change...")
+    # 1. Invalid current password
+    pwd_err1 = client_auth.post(
+        "/settings/change-password",
+        data={"current_password": "WrongPassword123!", "new_password": "NewSecret123!", "confirm_password": "NewSecret123!"}
+    )
+    assert pwd_err1.status_code == 200, f"pwd_err1 status {pwd_err1.status_code}"
+    assert "falsch" in pwd_err1.text.lower(), f"pwd_err1 text: {pwd_err1.text}"
+
+    # 2. Mismatched passwords
+    pwd_err2 = client_auth.post(
+        "/settings/change-password",
+        data={"current_password": "SecurePass123!", "new_password": "NewSecret123!", "confirm_password": "DifferentPass123!"}
+    )
+    assert pwd_err2.status_code == 200, f"pwd_err2 status {pwd_err2.status_code}"
+    assert "stimmen nicht überein" in pwd_err2.text.lower(), f"pwd_err2 text: {pwd_err2.text}"
+
+    # 3. Successful password change
+    pwd_ok = client_auth.post(
+        "/settings/change-password",
+        data={"current_password": "SecurePass123!", "new_password": "NewSecret123!", "confirm_password": "NewSecret123!"}
+    )
+    assert pwd_ok.status_code == 200, f"pwd_ok status {pwd_ok.status_code}"
+    assert "erfolgreich geändert" in pwd_ok.text.lower(), f"pwd_ok text: {pwd_ok.text}"
+
+    # 4. Verify login with new password
+    login_new = client.post(
+        "/login",
+        data={"username": "testuser@dealscout.de", "password": "NewSecret123!"},
+        follow_redirects=False
+    )
+    assert login_new.status_code == 303, f"Expected 303 redirect on login with new password, got {login_new.status_code}"
+    print("-> Password change and login with new password verified successfully!")
+
     print("\nALL AUTH & USER MANAGEMENT TESTS PASSED SUCCESSFULLY!")
 
 if __name__ == "__main__":

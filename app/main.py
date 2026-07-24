@@ -730,6 +730,43 @@ async def test_pushover_settings(
     else:
         return "<div class='alert alert-danger' style='background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.3); color: #F87171; padding: 1rem 1.5rem; border-radius: 12px; margin-bottom: 1rem;'>Senden der Test-Benachrichtigung fehlgeschlagen. Bitte überprüfe User Key und API Token.</div>"
 
+@app.post("/settings/change-password", response_class=HTMLResponse)
+async def change_password(
+    request: Request,
+    current_password: str = Form(""),
+    new_password: str = Form(""),
+    confirm_password: str = Form(""),
+    user: Optional[User] = Depends(current_optional_user),
+    db: Session = Depends(get_session)
+):
+    redirect = require_user(user, request)
+    if redirect:
+        return redirect
+
+    if not current_password or not new_password or not confirm_password:
+        return "<div class='alert alert-danger' style='background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.3); color: #F87171; padding: 1rem 1.5rem; border-radius: 12px; margin-bottom: 1rem;'>Bitte fülle alle Passwort-Felder aus.</div>"
+
+    if new_password != confirm_password:
+        return "<div class='alert alert-danger' style='background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.3); color: #F87171; padding: 1rem 1.5rem; border-radius: 12px; margin-bottom: 1rem;'>Die neuen Passwörter stimmen nicht überein.</div>"
+
+    if len(new_password) < 6:
+        return "<div class='alert alert-danger' style='background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.3); color: #F87171; padding: 1rem 1.5rem; border-radius: 12px; margin-bottom: 1rem;'>Das neue Passwort muss mindestens 6 Zeichen lang sein.</div>"
+
+    from fastapi_users.password import PasswordHelper
+    password_helper = PasswordHelper()
+
+    verified, _ = password_helper.verify_and_update(current_password, user.hashed_password)
+    if not verified:
+        return "<div class='alert alert-danger' style='background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.3); color: #F87171; padding: 1rem 1.5rem; border-radius: 12px; margin-bottom: 1rem;'>Das aktuelle Passwort ist falsch.</div>"
+
+    db_user = db.get(User, user.id)
+    if db_user:
+        db_user.hashed_password = password_helper.hash(new_password)
+        db.add(db_user)
+        db.commit()
+
+    return "<div class='alert alert-success fade-in'>Dein Passwort wurde erfolgreich geändert!</div>"
+
 # Admin User Management Routes
 @app.get("/admin/users", response_class=HTMLResponse)
 async def admin_users_page(
