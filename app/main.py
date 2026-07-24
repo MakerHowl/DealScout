@@ -809,3 +809,32 @@ async def delete_user(
         name="components/admin_users_list.html",
         context={"users": users, "user": user}
     )
+
+@app.post("/admin/users/{user_id_to_toggle}/toggle-role", response_class=HTMLResponse)
+async def toggle_user_role(
+    user_id_to_toggle: str,
+    request: Request,
+    user: Optional[User] = Depends(current_optional_user),
+    db: Session = Depends(get_session)
+):
+    redirect = require_admin(user, request)
+    if redirect:
+        return redirect
+
+    if str(user.id) != str(user_id_to_toggle):
+        try:
+            target_uuid = uuid.UUID(user_id_to_toggle)
+            target_user = db.get(User, target_uuid)
+            if target_user:
+                target_user.is_superuser = not target_user.is_superuser
+                db.add(target_user)
+                db.commit()
+        except ValueError:
+            pass
+
+    users = db.exec(select(User).order_by(User.email)).unique().all()
+    return templates.TemplateResponse(
+        request=request,
+        name="components/admin_users_list.html",
+        context={"users": users, "user": user}
+    )

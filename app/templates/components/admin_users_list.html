@@ -33,14 +33,35 @@
                     </td>
                     <td style="padding: 1rem; text-align: right;">
                         {% if user and u.id != user.id %}
-                            <button class="btn btn-secondary" 
-                                    style="padding: 0.4rem 0.8rem; font-size: 0.85rem; color: var(--accent-red); border-color: rgba(239, 68, 68, 0.3);"
-                                    hx-delete="/admin/users/{{ u.id }}"
-                                    hx-confirm="Möchtest du das Benutzerkonto '{{ u.email }}' wirklich unwiderruflich löschen?"
-                                    hx-target="#users-table-container"
-                                    hx-swap="innerHTML">
-                                🗑️ Löschen
-                            </button>
+                            <div style="display: inline-flex; gap: 0.5rem; justify-content: flex-end; align-items: center;">
+                                {% if u.is_superuser %}
+                                    <button class="btn btn-secondary" 
+                                            style="padding: 0.4rem 0.8rem; font-size: 0.85rem; color: #FBBF24; border-color: rgba(251, 191, 36, 0.3);"
+                                            hx-post="/admin/users/{{ u.id }}/toggle-role"
+                                            hx-confirm="Möchtest du '{{ u.email }}' wirklich als Administrator herabstufen?"
+                                            hx-target="#users-table-container"
+                                            hx-swap="innerHTML">
+                                        🔽 Zu Benutzer
+                                    </button>
+                                {% else %}
+                                    <button class="btn btn-secondary" 
+                                            style="padding: 0.4rem 0.8rem; font-size: 0.85rem; color: #4ADE80; border-color: rgba(74, 222, 128, 0.3);"
+                                            hx-post="/admin/users/{{ u.id }}/toggle-role"
+                                            hx-confirm="Möchtest du '{{ u.email }}' als Administrator befördern?"
+                                            hx-target="#users-table-container"
+                                            hx-swap="innerHTML">
+                                        🔼 Zu Admin
+                                    </button>
+                                {% endif %}
+                                <button class="btn btn-secondary" 
+                                        style="padding: 0.4rem 0.8rem; font-size: 0.85rem; color: var(--accent-red); border-color: rgba(239, 68, 68, 0.3);"
+                                        hx-delete="/admin/users/{{ u.id }}"
+                                        hx-confirm="Möchtest du das Benutzerkonto '{{ u.email }}' wirklich unwiderruflich löschen?"
+                                        hx-target="#users-table-container"
+                                        hx-swap="innerHTML">
+                                    🗑️ Löschen
+                                </button>
+                            </div>
                         {% else %}
                             <span style="font-size: 0.8rem; color: var(--text-muted);">Keine Aktion</span>
                         {% endif %}

@@ -147,14 +147,32 @@ def test_auth_system():
     assert resp2_admin.headers.get("location") == "/", "Expected redirect to / for non-admin"
     print("-> Second user is non-admin and blocked from /admin/users!")
 
-    # Admin deletes second user
+    # Test Admin toggling user2 role to Admin, then back to User
     from sqlmodel import Session, select
     from app.database import engine, User
     with Session(engine) as session:
         u2 = session.exec(select(User).where(User.email == "user2@dealscout.de")).first()
         assert u2 is not None, "user2 should exist in database"
+        assert not u2.is_superuser, "user2 should initially not be superuser"
         u2_id = str(u2.id)
 
+    # 1. Promote user2 to Admin
+    toggle_resp = client_auth.post(f"/admin/users/{u2_id}/toggle-role")
+    assert toggle_resp.status_code == 200, f"Expected 200 on toggle-role, got {toggle_resp.status_code}"
+    with Session(engine) as session:
+        u2_promoted = session.exec(select(User).where(User.email == "user2@dealscout.de")).first()
+        assert u2_promoted.is_superuser, "user2 should be promoted to superuser"
+    print("-> Admin promoted user2 to Administrator successfully!")
+
+    # 2. Demote user2 back to regular User
+    toggle_resp2 = client_auth.post(f"/admin/users/{u2_id}/toggle-role")
+    assert toggle_resp2.status_code == 200, f"Expected 200 on toggle-role demote, got {toggle_resp2.status_code}"
+    with Session(engine) as session:
+        u2_demoted = session.exec(select(User).where(User.email == "user2@dealscout.de")).first()
+        assert not u2_demoted.is_superuser, "user2 should be demoted back to regular user"
+    print("-> Admin demoted user2 back to regular User successfully!")
+
+    # Admin deletes second user
     del_resp = client_auth.delete(f"/admin/users/{u2_id}")
     assert del_resp.status_code == 200, f"Expected 200 on delete_user, got {del_resp.status_code}"
 
