@@ -27,10 +27,21 @@
             </div>
             <p class="tagline">Finde die besten Supermarkt-Angebote in deiner Nähe</p>
             <nav class="nav-bar desktop-nav">
-                <a href="/" class="nav-link {% if active_page == 'search' %}active{% endif %}">🔍 Markt-Suche</a>
-                <a href="/favorites-offers" class="nav-link {% if active_page == 'fav_offers' %}active{% endif %}">⭐ Favoriten-Angebote</a>
-                <a href="/favorite-products" class="nav-link {% if active_page == 'fav_products' %}active{% endif %}">❤️ Lieblingsprodukte</a>
-                <a href="/settings" class="nav-link {% if active_page == 'settings' %}active{% endif %}">⚙️ Einstellungen</a>
+                {% if user %}
+                    <a href="/" class="nav-link {% if active_page == 'search' %}active{% endif %}">🔍 Markt-Suche</a>
+                    <a href="/favorites-offers" class="nav-link {% if active_page == 'fav_offers' %}active{% endif %}">⭐ Favoriten-Angebote</a>
+                    <a href="/favorite-products" class="nav-link {% if active_page == 'fav_products' %}active{% endif %}">❤️ Lieblingsprodukte</a>
+                    <a href="/settings" class="nav-link {% if active_page == 'settings' %}active{% endif %}">⚙️ Einstellungen</a>
+                    <div style="display: flex; align-items: center; gap: 0.75rem; margin-left: 0.5rem; padding-left: 0.75rem; border-left: 1px solid var(--card-border);">
+                        <span style="font-size: 0.85rem; color: var(--text-secondary); max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">👤 {{ user.email }}</span>
+                        <a href="/logout" class="nav-link" style="color: var(--accent-red);">Abmelden</a>
+                    </div>
+                {% else %}
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <a href="/login" class="nav-link {% if active_page == 'login' %}active{% endif %}">Anmelden</a>
+                        <a href="/register" class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; text-decoration: none;">Registrieren</a>
+                    </div>
+                {% endif %}
             </nav>
         </header>
         
@@ -44,6 +55,7 @@
     </div>
     
     <!-- Mobile Bottom Navigation Bar -->
+    {% if user %}
     <nav class="mobile-nav-bar">
         <a href="/" class="mobile-nav-link {% if active_page == 'search' %}active{% endif %}">
             <span class="mobile-nav-icon">🔍</span>
@@ -61,6 +73,11 @@
             <span class="mobile-nav-icon">⚙️</span>
             <span class="mobile-nav-text">Einstellungen</span>
         </a>
+        <a href="/logout" class="mobile-nav-link">
+            <span class="mobile-nav-icon">🚪</span>
+            <span class="mobile-nav-text">Logout</span>
+        </a>
     </nav>
+    {% endif %}
 </body>
 </html>

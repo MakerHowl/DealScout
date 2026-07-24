@@ -13,65 +13,62 @@ os.environ["DATABASE_URL"] = f"sqlite:///{os.path.join(data_dir, 'test_deals_rou
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 from app.main import app
-from app.database import init_db, Market, engine
+from app.database import init_db, Market, UserMarketFavorite, engine
 
 def test_routes():
+    db_file = os.path.join(data_dir, 'test_deals_routes.db')
+    if os.path.exists(db_file):
+        try:
+            os.remove(db_file)
+        except Exception:
+            pass
     print("Initializing test database...")
     init_db()
     
-    # 1. Setup a favorite market in the test database
+    client = TestClient(app)
+
+    # 1. Register test user
+    test_email = "routetest@dealscout.de"
+    test_pass = "SecurePass123!"
+    reg_resp = client.post("/register", data={"email": test_email, "password": test_pass}, follow_redirects=False)
+    auth_cookie = reg_resp.cookies.get("dealscout_auth")
+    client_auth = TestClient(app, cookies={"dealscout_auth": auth_cookie})
+    
+    # 2. Setup a favorite market in the test database
     print("Setting up test data...")
     test_id = "verify-route-market"
-    with Session(engine) as session:
-        # Clean up any old test record
-        old_market = session.get(Market, test_id)
-        if old_market:
-            session.delete(old_market)
-            session.commit()
-            
-        market = Market(
-            id=test_id,
-            name="Test Edeka Route Market",
-            street="Musterstr. 2",
-            zip_code="54321",
-            city="Musterstadt",
-            url="http://example.com/route-test",
-            offers_url="https://www.edeka.de/de/marktsuche/edeka-nord-hamburg-e-center-altona-742/index.jsp", # valid domain for scrape fallback
-            is_favorite=True
-        )
-        session.add(market)
-        session.commit()
+    client_auth.post(
+        "/toggle-favorite",
+        data={
+            "id": test_id,
+            "name": "Test Edeka Route Market",
+            "street": "Musterstr. 2",
+            "zip_code": "54321",
+            "city": "Musterstadt",
+            "url": "http://example.com/route-test",
+            "offers_url": "https://www.edeka.de/de/marktsuche/edeka-nord-hamburg-e-center-altona-742/index.jsp"
+        }
+    )
         
-    client = TestClient(app)
-    
-    # 2. Test GET /favorites-offers
+    # 3. Test GET /favorites-offers
     print("Testing GET /favorites-offers...")
-    response = client.get("/favorites-offers")
+    response = client_auth.get("/favorites-offers")
     assert response.status_code == 200, f"Expected 200, got {response.status_code}"
     html = response.text
     assert "Angebote deiner Favoriten" in html, "Page header missing"
     assert "Test Edeka Route Market" in html, "Favorite market name missing"
     print("GET /favorites-offers passed successfully!")
     
-    # 3. Test POST /refresh-favorite-market-offers/{market_id}
-    # Note: Since this will try to scrape Edeka, we test that the endpoint responds.
-    # Edeka scraping might fail in local offline environments, so we handle both cases gracefully
-    # but verify that the endpoint completes and returns HTML structure.
+    # 4. Test POST /refresh-favorite-market-offers/{market_id}
     print("Testing POST /refresh-favorite-market-offers/...")
     try:
-        response = client.post(f"/refresh-favorite-market-offers/{test_id}")
+        response = client_auth.post(f"/refresh-favorite-market-offers/{test_id}")
         assert response.status_code == 200, f"Expected 200, got {response.status_code}"
         assert "last-scraped-text" in response.text, "Out-of-band swap timestamp missing"
         print("POST /refresh-favorite-market-offers passed successfully!")
     except Exception as e:
         print(f"Scrape request exception (could be connection error, which is fine for offline tests): {e}")
         
-    # Clean up test data
-    with Session(engine) as session:
-        market = session.get(Market, test_id)
-        if market:
-            session.delete(market)
-            session.commit()
     print("Cleanup completed.")
 
 if __name__ == "__main__":

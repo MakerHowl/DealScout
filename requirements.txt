@@ -7,5 +7,8 @@ sqlmodel>=0.0.14
 python-multipart>=0.0.6
 curl_cffi>=0.5.10
 croniter>=2.0.0
+fastapi-users[sqlalchemy]>=13.0.0
+passlib[bcrypt]>=1.7.4
+aiosqlite>=0.19.0
 
 

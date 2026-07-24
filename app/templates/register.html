@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Registrieren - DealScout{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper fade-in" style="max-width: 440px; margin: 2rem auto;">
+    <div class="glass-card" style="padding: 2.5rem;">
+        <h2 class="card-title" style="text-align: center; margin-bottom: 0.5rem;">Konto erstellen</h2>
+        <p class="card-desc" style="text-align: center; margin-bottom: 2rem;">Erstelle ein lokales Konto für DealScout.</p>
+
+        {% if error %}
+            <div class="alert alert-danger" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #F87171; padding: 0.75rem 1rem; border-radius: 12px; margin-bottom: 1.5rem; font-size: 0.9rem;">
+                {{ error }}
+            </div>
+        {% endif %}
+
+        <form action="/register" method="post" style="display: flex; flex-direction: column; gap: 1.25rem;">
+            <div>
+                <label for="email" style="display: block; font-size: 0.9rem; font-weight: 500; color: var(--text-secondary); margin-bottom: 0.5rem;">E-Mail-Adresse</label>
+                <input type="email" id="email" name="email" value="{{ email or '' }}" class="form-input" style="width: 100%;" required autofocus placeholder="name@beispiel.de">
+            </div>
+
+            <div>
+                <label for="password" style="display: block; font-size: 0.9rem; font-weight: 500; color: var(--text-secondary); margin-bottom: 0.5rem;">Passwort</label>
+                <input type="password" id="password" name="password" class="form-input" style="width: 100%;" required minlength="8" placeholder="Mindestens 8 Zeichen">
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.85rem; font-size: 1rem; font-weight: 600; margin-top: 0.5rem;">Konto erstellen</button>
+        </form>
+
+        <div style="text-align: center; margin-top: 1.75rem; font-size: 0.9rem; color: var(--text-secondary);">
+            Bereits ein Konto? <a href="/login" style="color: var(--primary); font-weight: 600; text-decoration: none;">Jetzt anmelden</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

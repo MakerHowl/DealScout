@@ -1,13 +1,22 @@
 import asyncio
-from fastapi import FastAPI, Request, Response, Form, Cookie, Depends
+import uuid
+from fastapi import FastAPI, Request, Response, Form, Cookie, Depends, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlmodel import Session, select
 from typing import Optional
 from datetime import datetime, timedelta
 
-from app.database import init_db, get_session, Market, Offer, FavoriteProduct, NotificationConfig, get_notification_config, get_setting, set_setting
+from app.database import (
+    init_db, get_session, Market, Offer, FavoriteProduct, UserMarketFavorite,
+    NotificationConfig, get_notification_config, get_setting, set_setting, User
+)
+from app.auth import (
+    fastapi_users, auth_backend, current_optional_user, current_active_user,
+    get_user_manager, UserManager, UserCreate, UserRead
+)
 from app.scraper import update_market_offers_in_db, PROVIDERS
 from app.scheduler import start_scheduler
 
@@ -22,19 +31,127 @@ def on_startup():
     init_db()
     asyncio.create_task(start_scheduler())
 
+def require_user(user: Optional[User], request: Request):
+    if not user:
+        if request.headers.get("HX-Request") == "true":
+            return Response(status_code=401, headers={"HX-Redirect": "/login"})
+        return RedirectResponse(url="/login", status_code=303)
+    return None
+
+# Include standard fastapi-users routers for REST API access if needed
+app.include_router(
+    fastapi_users.get_auth_router(auth_backend),
+    prefix="/auth/jwt",
+    tags=["auth"],
+)
+app.include_router(
+    fastapi_users.get_register_router(UserRead, UserCreate),
+    prefix="/auth",
+    tags=["auth"],
+)
+
+# Authentication HTML View Routes
+@app.get("/login", response_class=HTMLResponse)
+async def login_page(
+    request: Request,
+    user: Optional[User] = Depends(current_optional_user)
+):
+    if user:
+        return RedirectResponse(url="/", status_code=303)
+    return templates.TemplateResponse(
+        request=request,
+        name="login.html",
+        context={"user": user, "active_page": "login"}
+    )
+
+@app.post("/login")
+async def login_submit(
+    request: Request,
+    username: str = Form(...),
+    password: str = Form(...),
+    user_manager: UserManager = Depends(get_user_manager),
+    strategy = Depends(auth_backend.get_strategy)
+):
+    credentials = OAuth2PasswordRequestForm(username=username.strip(), password=password)
+    user = await user_manager.authenticate(credentials)
+    if user is None or not user.is_active:
+        return templates.TemplateResponse(
+            request=request,
+            name="login.html",
+            context={"error": "Ungültige E-Mail-Adresse oder Passwort.", "email": username, "active_page": "login"},
+            status_code=400
+        )
+    
+    token = await strategy.write_token(user)
+    response = RedirectResponse(url="/", status_code=303)
+    response.set_cookie(key="dealscout_auth", value=token, max_age=3600*24*7, httponly=True, samesite="lax")
+    return response
+
+@app.get("/register", response_class=HTMLResponse)
+async def register_page(
+    request: Request,
+    user: Optional[User] = Depends(current_optional_user)
+):
+    if user:
+        return RedirectResponse(url="/", status_code=303)
+    return templates.TemplateResponse(
+        request=request,
+        name="register.html",
+        context={"user": user, "active_page": "register"}
+    )
+
+@app.post("/register")
+async def register_submit(
+    request: Request,
+    email: str = Form(...),
+    password: str = Form(...),
+    user_manager: UserManager = Depends(get_user_manager),
+    strategy = Depends(auth_backend.get_strategy)
+):
+    try:
+        user_create = UserCreate(email=email.strip(), password=password)
+        user = await user_manager.create(user_create, safe=True, request=request)
+    except Exception as e:
+        err_msg = str(e)
+        if "REGISTER_USER_ALREADY_EXISTS" in err_msg:
+            err_msg = "Eine Registrierung mit dieser E-Mail-Adresse ist bereits vorhanden."
+        return templates.TemplateResponse(
+            request=request,
+            name="register.html",
+            context={"error": f"Registrierung fehlgeschlagen: {err_msg}", "email": email, "active_page": "register"},
+            status_code=400
+        )
+    
+    token = await strategy.write_token(user)
+    response = RedirectResponse(url="/", status_code=303)
+    response.set_cookie(key="dealscout_auth", value=token, max_age=3600*24*7, httponly=True, samesite="lax")
+    return response
+
+@app.get("/logout")
+@app.post("/logout")
+async def logout():
+    response = RedirectResponse(url="/login", status_code=303)
+    response.delete_cookie("dealscout_auth")
+    return response
+
+# Main App Routes (Strictly Protected)
 @app.get("/", response_class=HTMLResponse)
 async def get_index(
     request: Request,
     selected_market_id: Optional[str] = Cookie(default=None),
+    user: Optional[User] = Depends(current_optional_user),
     db: Session = Depends(get_session)
 ):
+    redirect = require_user(user, request)
+    if redirect:
+        return redirect
+
     market = None
     offers_count = 0
     
     if selected_market_id:
         market = db.get(Market, selected_market_id)
         if market:
-            # Check if we need to auto-scrape (e.g. if last_scraped is older than 24 hours or None)
             needs_scrape = (
                 not market.last_scraped or 
                 datetime.utcnow() - market.last_scraped > timedelta(hours=24)
@@ -52,7 +169,8 @@ async def get_index(
         context={
             "market": market,
             "offers_count": offers_count,
-            "active_page": "search"
+            "active_page": "search",
+            "user": user
         }
     )
 
@@ -60,14 +178,18 @@ async def get_index(
 async def search_markets(
     request: Request,
     q: str = "",
+    user: Optional[User] = Depends(current_optional_user),
     db: Session = Depends(get_session)
 ):
+    redirect = require_user(user, request)
+    if redirect:
+        return redirect
+
     q_clean = q.strip()
     if not q_clean or len(q_clean) < 2:
         return "<p class='text-red-400 mt-4 text-center'>Bitte geben Sie mindestens 2 Zeichen ein.</p>"
         
     markets = []
-    # Search across all registered providers
     for name, provider in PROVIDERS.items():
         try:
             res = provider["search"](q_clean)
@@ -75,11 +197,13 @@ async def search_markets(
         except Exception as e:
             print(f"Error searching {name} markets: {e}")
             
-    # Check database to see which markets are already favorited
     favorited_ids = set()
-    if markets:
+    if markets and user:
         market_ids = [m["id"] for m in markets]
-        stmt = select(Market.id).where(Market.id.in_(market_ids)).where(Market.is_favorite == True)
+        stmt = select(UserMarketFavorite.market_id).where(
+            UserMarketFavorite.user_id == user.id,
+            UserMarketFavorite.market_id.in_(market_ids)
+        )
         favorited_ids = set(db.exec(stmt).all())
         
     for m in markets:
@@ -88,11 +212,12 @@ async def search_markets(
     return templates.TemplateResponse(
         request=request,
         name="components/market_list.html",
-        context={"markets": markets}
+        context={"markets": markets, "user": user}
     )
 
 @app.post("/select-market")
 async def select_market(
+    request: Request,
     response: Response,
     id: str = Form(...),
     name: str = Form(...),
@@ -101,9 +226,13 @@ async def select_market(
     city: str = Form(...),
     url: str = Form(...),
     offers_url: str = Form(...),
+    user: Optional[User] = Depends(current_optional_user),
     db: Session = Depends(get_session)
 ):
-    # 1. Check if market exists in DB, otherwise create it
+    redirect = require_user(user, request)
+    if redirect:
+        return redirect
+
     market = db.get(Market, id)
     if not market:
         market = Market(
@@ -119,13 +248,20 @@ async def select_market(
         db.commit()
         db.refresh(market)
         
-    # 2. Set the cookie for the selected market
     response = RedirectResponse(url="/", status_code=303)
-    response.set_cookie(key="selected_market_id", value=id, max_age=3600*24*30) # 30 days
+    response.set_cookie(key="selected_market_id", value=id, max_age=3600*24*30)
     return response
 
 @app.post("/deselect-market")
-async def deselect_market(response: Response):
+async def deselect_market(
+    request: Request,
+    response: Response,
+    user: Optional[User] = Depends(current_optional_user)
+):
+    redirect = require_user(user, request)
+    if redirect:
+        return redirect
+
     response = RedirectResponse(url="/", status_code=303)
     response.delete_cookie(key="selected_market_id")
     return response
@@ -141,11 +277,15 @@ async def toggle_favorite(
     city: Optional[str] = Form(None),
     url: Optional[str] = Form(None),
     offers_url: Optional[str] = Form(None),
+    user: Optional[User] = Depends(current_optional_user),
     db: Session = Depends(get_session)
 ):
+    redirect = require_user(user, request)
+    if redirect:
+        return redirect
+        
     market = db.get(Market, id)
     if not market:
-        # Create the market if it doesn't exist
         market = Market(
             id=id,
             name=name or "",
@@ -156,12 +296,21 @@ async def toggle_favorite(
             offers_url=offers_url or ""
         )
         db.add(market)
-        
-    market.is_favorite = not market.is_favorite
+        db.commit()
+
+    fav = db.exec(select(UserMarketFavorite).where(
+        UserMarketFavorite.user_id == user.id,
+        UserMarketFavorite.market_id == id
+    )).first()
+
+    if fav:
+        db.delete(fav)
+        is_favorite = False
+    else:
+        db.add(UserMarketFavorite(user_id=user.id, market_id=id))
+        is_favorite = True
     db.commit()
-    db.refresh(market)
-    
-    # Trigger HTMX event to update the favorites list on the page
+
     response.headers["HX-Trigger"] = "update-favorites"
     
     return templates.TemplateResponse(
@@ -175,21 +324,31 @@ async def toggle_favorite(
             "city": market.city,
             "url": market.url,
             "offers_url": market.offers_url,
-            "is_favorite": market.is_favorite
+            "is_favorite": is_favorite,
+            "user": user
         }
     )
 
 @app.get("/favorites-list", response_class=HTMLResponse)
 async def get_favorites_list(
     request: Request,
+    user: Optional[User] = Depends(current_optional_user),
     db: Session = Depends(get_session)
 ):
-    stmt = select(Market).where(Market.is_favorite == True)
-    favorites = db.exec(stmt).all()
+    redirect = require_user(user, request)
+    if redirect:
+        return redirect
+
+    fav_ids = db.exec(select(UserMarketFavorite.market_id).where(UserMarketFavorite.user_id == user.id)).all()
+    if not fav_ids:
+        favorites = []
+    else:
+        favorites = db.exec(select(Market).where(Market.id.in_(fav_ids))).all()
+        
     return templates.TemplateResponse(
         request=request,
         name="components/favorites_list.html",
-        context={"favorites": favorites}
+        context={"favorites": favorites, "user": user}
     )
 
 @app.get("/search-offers", response_class=HTMLResponse)
@@ -197,8 +356,13 @@ async def search_offers(
     request: Request,
     q: str = "",
     selected_market_id: Optional[str] = Cookie(default=None),
+    user: Optional[User] = Depends(current_optional_user),
     db: Session = Depends(get_session)
 ):
+    redirect = require_user(user, request)
+    if redirect:
+        return redirect
+
     if not selected_market_id:
         return "<p class='text-red-400 text-center'>Kein Markt ausgewählt.</p>"
         
@@ -215,49 +379,67 @@ async def search_offers(
     return templates.TemplateResponse(
         request=request,
         name="components/offer_results.html",
-        context={"offers": offers, "query": q, "market": market}
+        context={"offers": offers, "query": q, "market": market, "user": user}
     )
 
 @app.post("/refresh-offers", response_class=HTMLResponse)
 async def refresh_offers(
     request: Request,
     selected_market_id: Optional[str] = Cookie(default=None),
+    user: Optional[User] = Depends(current_optional_user),
     db: Session = Depends(get_session)
 ):
+    redirect = require_user(user, request)
+    if redirect:
+        return redirect
+
     if not selected_market_id:
         return "<div class='text-red-400 text-center'>Kein Markt ausgewählt.</div>"
         
     success = update_market_offers_in_db(selected_market_id, db)
     market = db.get(Market, selected_market_id)
     
-    # Reload all offers
     offers = db.exec(select(Offer).where(Offer.market_id == selected_market_id)).all()
     
     return templates.TemplateResponse(
         request=request,
         name="components/offer_results.html",
-        context={"offers": offers, "market": market, "refreshed": success}
+        context={"offers": offers, "market": market, "refreshed": success, "user": user}
     )
 
 @app.get("/favorites-offers", response_class=HTMLResponse)
 async def get_favorites_offers(
     request: Request,
+    user: Optional[User] = Depends(current_optional_user),
     db: Session = Depends(get_session)
 ):
-    stmt = select(Market).where(Market.is_favorite == True)
-    favorites = db.exec(stmt).all()
+    redirect = require_user(user, request)
+    if redirect:
+        return redirect
+
+    fav_ids = db.exec(select(UserMarketFavorite.market_id).where(UserMarketFavorite.user_id == user.id)).all()
+    if not fav_ids:
+        favorites = []
+    else:
+        favorites = db.exec(select(Market).where(Market.id.in_(fav_ids))).all()
+        
     return templates.TemplateResponse(
         request=request,
         name="favorites_offers.html",
-        context={"favorites": favorites, "active_page": "fav_offers"}
+        context={"favorites": favorites, "active_page": "fav_offers", "user": user}
     )
 
 @app.post("/refresh-favorite-market-offers/{market_id}", response_class=HTMLResponse)
 async def refresh_favorite_market_offers(
     market_id: str,
     request: Request,
+    user: Optional[User] = Depends(current_optional_user),
     db: Session = Depends(get_session)
 ):
+    redirect = require_user(user, request)
+    if redirect:
+        return redirect
+
     success = update_market_offers_in_db(market_id, db)
     market = db.get(Market, market_id)
     if not market:
@@ -266,48 +448,68 @@ async def refresh_favorite_market_offers(
     return templates.TemplateResponse(
         request=request,
         name="components/offers_scroll_row.html",
-        context={"market": market, "refreshed": success}
+        context={"market": market, "refreshed": success, "user": user}
     )
 
 @app.get("/favorite-products", response_class=HTMLResponse)
 async def get_favorite_products_page(
     request: Request,
-    db: Session = Depends(get_session)
+    user: Optional[User] = Depends(current_optional_user)
 ):
+    redirect = require_user(user, request)
+    if redirect:
+        return redirect
+
     return templates.TemplateResponse(
         request=request,
         name="favorite_products.html",
-        context={"active_page": "fav_products"}
+        context={"active_page": "fav_products", "user": user}
     )
 
 @app.get("/favorite-products-list", response_class=HTMLResponse)
 async def get_favorite_products_list(
     request: Request,
+    user: Optional[User] = Depends(current_optional_user),
     db: Session = Depends(get_session)
 ):
-    products = db.exec(select(FavoriteProduct).order_by(FavoriteProduct.name)).all()
+    redirect = require_user(user, request)
+    if redirect:
+        return redirect
+
+    products = db.exec(
+        select(FavoriteProduct)
+        .where(FavoriteProduct.user_id == user.id)
+        .order_by(FavoriteProduct.name)
+    ).all()
+        
     return templates.TemplateResponse(
         request=request,
         name="components/favorite_products_list.html",
-        context={"products": products}
+        context={"products": products, "user": user}
     )
 
 @app.post("/add-favorite-product", response_class=HTMLResponse)
 async def add_favorite_product(
+    request: Request,
     response: Response,
     name: str = Form(...),
+    user: Optional[User] = Depends(current_optional_user),
     db: Session = Depends(get_session)
 ):
+    redirect = require_user(user, request)
+    if redirect:
+        return redirect
+        
     name_clean = name.strip()
     if not name_clean:
         return "<span class='text-red-400'>Produktname darf nicht leer sein.</span>"
         
-    stmt = select(FavoriteProduct)
+    stmt = select(FavoriteProduct).where(FavoriteProduct.user_id == user.id)
     existing_products = db.exec(stmt).all()
     if any(p.name.lower() == name_clean.lower() for p in existing_products):
         return "<span class='text-amber-400'>Dieses Produkt ist bereits in deiner Liste.</span>"
         
-    new_prod = FavoriteProduct(name=name_clean)
+    new_prod = FavoriteProduct(user_id=user.id, name=name_clean)
     db.add(new_prod)
     db.commit()
     
@@ -317,10 +519,19 @@ async def add_favorite_product(
 @app.delete("/delete-favorite-product/{product_id}")
 async def delete_favorite_product(
     product_id: int,
+    request: Request,
     response: Response,
+    user: Optional[User] = Depends(current_optional_user),
     db: Session = Depends(get_session)
 ):
-    prod = db.get(FavoriteProduct, product_id)
+    redirect = require_user(user, request)
+    if redirect:
+        return redirect
+        
+    prod = db.exec(select(FavoriteProduct).where(
+        FavoriteProduct.id == product_id,
+        FavoriteProduct.user_id == user.id
+    )).first()
     if prod:
         db.delete(prod)
         db.commit()
@@ -330,17 +541,22 @@ async def delete_favorite_product(
 @app.get("/favorite-products-offers", response_class=HTMLResponse)
 async def get_favorite_products_offers(
     request: Request,
+    user: Optional[User] = Depends(current_optional_user),
     db: Session = Depends(get_session)
 ):
-    favorite_markets = db.exec(select(Market).where(Market.is_favorite == True)).all()
-    fav_market_ids = [m.id for m in favorite_markets]
+    redirect = require_user(user, request)
+    if redirect:
+        return redirect
+
+    fav_ids = db.exec(select(UserMarketFavorite.market_id).where(UserMarketFavorite.user_id == user.id)).all()
+    favorite_markets = db.exec(select(Market).where(Market.id.in_(fav_ids))).all() if fav_ids else []
     
-    products = db.exec(select(FavoriteProduct).order_by(FavoriteProduct.name)).all()
+    products = db.exec(select(FavoriteProduct).where(FavoriteProduct.user_id == user.id).order_by(FavoriteProduct.name)).all()
     
     offers_by_product = {}
     
-    if fav_market_ids and products:
-        offers = db.exec(select(Offer).where(Offer.market_id.in_(fav_market_ids))).all()
+    if fav_ids and products:
+        offers = db.exec(select(Offer).where(Offer.market_id.in_(fav_ids))).all()
         
         for prod in products:
             prod_name_lower = prod.name.lower()
@@ -359,17 +575,23 @@ async def get_favorite_products_offers(
         context={
             "favorite_markets": favorite_markets,
             "products": products,
-            "offers_by_product": offers_by_product
+            "offers_by_product": offers_by_product,
+            "user": user
         }
     )
 
 @app.get("/settings", response_class=HTMLResponse)
 async def get_settings_page(
     request: Request,
+    user: Optional[User] = Depends(current_optional_user),
     db: Session = Depends(get_session)
 ):
+    redirect = require_user(user, request)
+    if redirect:
+        return redirect
+
     from croniter import croniter
-    pushover_cfg = get_notification_config(db, "pushover")
+    pushover_cfg = get_notification_config(db, user.id, "pushover")
     cron_expr = get_setting(db, "refresh_cron", "0 0 * * *")
     
     next_run_str = "Ungültig oder nicht gesetzt"
@@ -398,15 +620,22 @@ async def get_settings_page(
             "cron_expr": cron_expr,
             "next_run_str": next_run_str,
             "last_refresh_str": last_refresh_str,
-            "active_page": "settings"
+            "active_page": "settings",
+            "user": user
         }
     )
 
 @app.post("/settings/cron", response_class=HTMLResponse)
 async def save_cron_settings(
+    request: Request,
     cron: str = Form(""),
+    user: Optional[User] = Depends(current_optional_user),
     db: Session = Depends(get_session)
 ):
+    redirect = require_user(user, request)
+    if redirect:
+        return redirect
+
     from croniter import croniter
     cron_clean = cron.strip()
     
@@ -429,12 +658,18 @@ async def save_cron_settings(
 
 @app.post("/settings/pushover", response_class=HTMLResponse)
 async def save_pushover_settings(
+    request: Request,
     user_key: str = Form(""),
     api_token: str = Form(""),
     enabled: bool = Form(False),
+    user: Optional[User] = Depends(current_optional_user),
     db: Session = Depends(get_session)
 ):
-    config = get_notification_config(db, "pushover")
+    redirect = require_user(user, request)
+    if redirect:
+        return redirect
+
+    config = get_notification_config(db, user.id, "pushover")
     config.enabled = enabled
     config.settings = {
         "user_key": user_key.strip(),
@@ -446,9 +681,15 @@ async def save_pushover_settings(
 
 @app.post("/settings/pushover/test", response_class=HTMLResponse)
 async def test_pushover_settings(
+    request: Request,
     user_key: str = Form(""),
-    api_token: str = Form("")
+    api_token: str = Form(""),
+    user: Optional[User] = Depends(current_optional_user)
 ):
+    redirect = require_user(user, request)
+    if redirect:
+        return redirect
+
     from app.notifications.manager import get_service
     pushover_service = get_service("pushover")
     
