@@ -23,6 +23,26 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
     reset_password_token_secret = SECRET
     verification_token_secret = SECRET
 
+    async def create(
+        self,
+        user_create: UserCreate,
+        safe: bool = False,
+        request: Optional[Request] = None,
+    ) -> User:
+        from sqlmodel import select
+        statement = select(User)
+        result = await self.user_db.session.execute(statement)
+        users = result.unique().scalars().all()
+        is_first = len(users) == 0
+
+        created_user = await super().create(user_create, safe=safe, request=request)
+        if is_first:
+            created_user.is_superuser = True
+            self.user_db.session.add(created_user)
+            await self.user_db.session.commit()
+            await self.user_db.session.refresh(created_user)
+        return created_user
+
     async def on_after_register(self, user: User, request: Optional[Request] = None):
         print(f"User {user.id} has registered.")
 

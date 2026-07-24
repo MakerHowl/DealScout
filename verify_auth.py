@@ -124,6 +124,45 @@ def test_auth_system():
     assert "user_key_abc" in resp.text, "User-bound Pushover user_key missing from settings page"
     print("-> User-bound Pushover settings tested successfully!")
 
+    print("7. Testing Admin User Management & Promotion Logic...")
+    # First user (testuser@dealscout.de) must be superuser
+    resp_admin = client_auth.get("/admin/users")
+    assert resp_admin.status_code == 200, f"Expected 200 for Admin on /admin/users, got {resp_admin.status_code}"
+    assert "Userverwaltung" in resp_admin.text
+    assert "Administrator" in resp_admin.text
+    print("-> First user is Admin and can access /admin/users!")
+
+    # Register a second user (user2@dealscout.de)
+    resp2 = client.post(
+        "/register",
+        data={"email": "user2@dealscout.de", "password": "UserPass123!"},
+        follow_redirects=False
+    )
+    token2 = resp2.cookies["dealscout_auth"]
+    client_user2 = TestClient(app, cookies={"dealscout_auth": token2})
+
+    # Second user must NOT be superuser and must be blocked from /admin/users
+    resp2_admin = client_user2.get("/admin/users", follow_redirects=False)
+    assert resp2_admin.status_code == 303, f"Expected 303 redirect for non-admin on /admin/users, got {resp2_admin.status_code}"
+    assert resp2_admin.headers.get("location") == "/", "Expected redirect to / for non-admin"
+    print("-> Second user is non-admin and blocked from /admin/users!")
+
+    # Admin deletes second user
+    from sqlmodel import Session, select
+    from app.database import engine, User
+    with Session(engine) as session:
+        u2 = session.exec(select(User).where(User.email == "user2@dealscout.de")).first()
+        assert u2 is not None, "user2 should exist in database"
+        u2_id = str(u2.id)
+
+    del_resp = client_auth.delete(f"/admin/users/{u2_id}")
+    assert del_resp.status_code == 200, f"Expected 200 on delete_user, got {del_resp.status_code}"
+
+    with Session(engine) as session:
+        u2_check = session.exec(select(User).where(User.email == "user2@dealscout.de")).first()
+        assert u2_check is None, "user2 should have been deleted from database"
+    print("-> Admin user deletion passed successfully!")
+
     print("\nALL AUTH & USER MANAGEMENT TESTS PASSED SUCCESSFULLY!")
 
 if __name__ == "__main__":

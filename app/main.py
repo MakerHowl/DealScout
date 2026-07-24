@@ -52,6 +52,16 @@ def require_user(user: Optional[User], request: Request):
         return RedirectResponse(url="/login", status_code=303)
     return None
 
+def require_admin(user: Optional[User], request: Request):
+    redirect = require_user(user, request)
+    if redirect:
+        return redirect
+    if not user.is_superuser:
+        if request.headers.get("HX-Request") == "true":
+            return Response(status_code=403, headers={"HX-Redirect": "/"})
+        return RedirectResponse(url="/", status_code=303)
+    return None
+
 # Include standard fastapi-users routers for REST API access if needed
 app.include_router(
     fastapi_users.get_auth_router(auth_backend),
@@ -719,3 +729,83 @@ async def test_pushover_settings(
         return "<div class='alert alert-success fade-in'>Test-Benachrichtigung erfolgreich gesendet! Bitte überprüfe dein Gerät.</div>"
     else:
         return "<div class='alert alert-danger' style='background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.3); color: #F87171; padding: 1rem 1.5rem; border-radius: 12px; margin-bottom: 1rem;'>Senden der Test-Benachrichtigung fehlgeschlagen. Bitte überprüfe User Key und API Token.</div>"
+
+# Admin User Management Routes
+@app.get("/admin/users", response_class=HTMLResponse)
+async def admin_users_page(
+    request: Request,
+    user: Optional[User] = Depends(current_optional_user),
+    db: Session = Depends(get_session)
+):
+    redirect = require_admin(user, request)
+    if redirect:
+        return redirect
+
+    users = db.exec(select(User).order_by(User.email)).unique().all()
+    return templates.TemplateResponse(
+        request=request,
+        name="admin_users.html",
+        context={
+            "users": users,
+            "active_page": "admin_users",
+            "user": user
+        }
+    )
+
+@app.delete("/admin/users/{user_id_to_delete}", response_class=HTMLResponse)
+async def delete_user(
+    user_id_to_delete: str,
+    request: Request,
+    user: Optional[User] = Depends(current_optional_user),
+    db: Session = Depends(get_session)
+):
+    redirect = require_admin(user, request)
+    if redirect:
+        return redirect
+
+    if str(user.id) == str(user_id_to_delete):
+        users = db.exec(select(User).order_by(User.email)).unique().all()
+        return templates.TemplateResponse(
+            request=request,
+            name="components/admin_users_list.html",
+            context={"users": users, "user": user}
+        )
+
+    try:
+        target_uuid = uuid.UUID(user_id_to_delete)
+    except ValueError:
+        users = db.exec(select(User).order_by(User.email)).unique().all()
+        return templates.TemplateResponse(
+            request=request,
+            name="components/admin_users_list.html",
+            context={"users": users, "user": user}
+        )
+
+    # Delete related data first
+    # 1. Favorite Products
+    prods = db.exec(select(FavoriteProduct).where(FavoriteProduct.user_id == target_uuid)).all()
+    for p in prods:
+        db.delete(p)
+
+    # 2. User Market Favorites
+    market_favs = db.exec(select(UserMarketFavorite).where(UserMarketFavorite.user_id == target_uuid)).all()
+    for mf in market_favs:
+        db.delete(mf)
+
+    # 3. Notification Configs
+    notifs = db.exec(select(NotificationConfig).where(NotificationConfig.user_id == target_uuid)).all()
+    for n in notifs:
+        db.delete(n)
+
+    # 4. User
+    target_user = db.get(User, target_uuid)
+    if target_user:
+        db.delete(target_user)
+        db.commit()
+
+    users = db.exec(select(User).order_by(User.email)).unique().all()
+    return templates.TemplateResponse(
+        request=request,
+        name="components/admin_users_list.html",
+        context={"users": users, "user": user}
+    )

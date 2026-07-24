@@ -1,0 +1,52 @@
+<div class="table-responsive" style="overflow-x: auto;">
+    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem;">
+        <thead>
+            <tr style="border-bottom: 1px solid var(--card-border); color: var(--text-secondary);">
+                <th style="padding: 0.75rem 1rem;">E-Mail-Adresse</th>
+                <th style="padding: 0.75rem 1rem;">Rolle</th>
+                <th style="padding: 0.75rem 1rem;">Status</th>
+                <th style="padding: 0.75rem 1rem; text-align: right;">Aktionen</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for u in users %}
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+                    <td style="padding: 1rem; font-weight: 500;">
+                        {{ u.email }}
+                        {% if user and u.id == user.id %}
+                            <span style="font-size: 0.75rem; color: var(--primary); margin-left: 0.5rem;">(Du)</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 1rem;">
+                        {% if u.is_superuser %}
+                            <span class="badge-store" style="background: rgba(34, 197, 94, 0.15); color: #4ADE80; border: 1px solid rgba(34, 197, 94, 0.3);">Administrator</span>
+                        {% else %}
+                            <span class="badge-store" style="background: rgba(156, 163, 175, 0.15); color: #9CA3AF; border: 1px solid rgba(156, 163, 175, 0.3);">Benutzer</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 1rem;">
+                        {% if u.is_active %}
+                            <span style="color: #4ADE80; font-size: 0.85rem;">● Aktiv</span>
+                        {% else %}
+                            <span style="color: #F87171; font-size: 0.85rem;">● Inaktiv</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 1rem; text-align: right;">
+                        {% if user and u.id != user.id %}
+                            <button class="btn btn-secondary" 
+                                    style="padding: 0.4rem 0.8rem; font-size: 0.85rem; color: var(--accent-red); border-color: rgba(239, 68, 68, 0.3);"
+                                    hx-delete="/admin/users/{{ u.id }}"
+                                    hx-confirm="Möchtest du das Benutzerkonto '{{ u.email }}' wirklich unwiderruflich löschen?"
+                                    hx-target="#users-table-container"
+                                    hx-swap="innerHTML">
+                                🗑️ Löschen
+                            </button>
+                        {% else %}
+                            <span style="font-size: 0.8rem; color: var(--text-muted);">Keine Aktion</span>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

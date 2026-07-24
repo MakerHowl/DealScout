@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}Userverwaltung - DealScout{% endblock %}
+
+{% block content %}
+<section class="glass-card fade-in" style="max-width: 900px; margin: 1rem auto; padding: 2rem;">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h2 class="card-title" style="margin-bottom: 0.25rem;">👥 Userverwaltung</h2>
+            <p class="card-desc">Verwalte alle registrierten Benutzerkonten der DealScout App.</p>
+        </div>
+        <span class="badge-store" style="background: rgba(99, 102, 241, 0.2); color: #818CF8; border: 1px solid rgba(99, 102, 241, 0.4);">Adminbereich</span>
+    </div>
+
+    <div id="users-table-container">
+        {% include "components/admin_users_list.html" %}
+    </div>
+</section>
+{% endblock %}

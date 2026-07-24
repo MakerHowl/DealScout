@@ -143,6 +143,11 @@ def init_db():
                 
     SQLModel.metadata.create_all(engine)
 
+    # Promote all existing users to superusers for existing installations
+    if inspector.has_table("user"):
+        with engine.begin() as conn:
+            conn.execute(text("UPDATE user SET is_superuser = 1 WHERE is_superuser = 0 OR is_superuser IS NULL"))
+
 def get_session():
     with Session(engine) as session:
         yield session

@@ -56,6 +56,9 @@
                     <a href="/favorites-offers" class="nav-link {% if active_page == 'fav_offers' %}active{% endif %}">⭐ Favoriten-Angebote</a>
                     <a href="/favorite-products" class="nav-link {% if active_page == 'fav_products' %}active{% endif %}">❤️ Lieblingsprodukte</a>
                     <a href="/settings" class="nav-link {% if active_page == 'settings' %}active{% endif %}">⚙️ Einstellungen</a>
+                    {% if user.is_superuser %}
+                        <a href="/admin/users" class="nav-link {% if active_page == 'admin_users' %}active{% endif %}">👥 Userverwaltung</a>
+                    {% endif %}
                     <div style="display: flex; align-items: center; gap: 0.75rem; margin-left: 0.5rem; padding-left: 0.75rem; border-left: 1px solid var(--card-border);">
                         <span style="font-size: 0.85rem; color: var(--text-secondary); max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">👤 {{ user.email }}</span>
                         <a href="/logout" class="nav-link" style="color: var(--accent-red);">Abmelden</a>
@@ -97,6 +100,12 @@
             <span class="mobile-nav-icon">⚙️</span>
             <span class="mobile-nav-text">Einstellungen</span>
         </a>
+        {% if user.is_superuser %}
+        <a href="/admin/users" class="mobile-nav-link {% if active_page == 'admin_users' %}active{% endif %}">
+            <span class="mobile-nav-icon">👥</span>
+            <span class="mobile-nav-text">Users</span>
+        </a>
+        {% endif %}
         <a href="/logout" class="mobile-nav-link">
             <span class="mobile-nav-icon">🚪</span>
             <span class="mobile-nav-text">Logout</span>
